@@ -1,0 +1,2 @@
+com\company\chatplatform\common\web\exception\GlobalExceptionHandler.class
+com\company\chatplatform\common\web\filter\CorrelationIdFilter.class

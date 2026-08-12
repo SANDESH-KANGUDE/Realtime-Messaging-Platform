@@ -1,0 +1,9 @@
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\controller\SearchController.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\domain\document\SearchIndexDocument.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\domain\repository\SearchIndexRepository.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\dto\SearchResultDto.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\listener\SearchKafkaListener.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\provider\MongoSearchProvider.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\provider\SearchProvider.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\SearchApplication.java
+F:\CDAC\realtime_chat_antigravity\backend\search-service\src\main\java\com\company\chatplatform\searchservice\service\SearchService.java

@@ -1,0 +1,24 @@
+# Redis Presence and Connection Verification Commands
+# You can execute these commands in redis-cli (inside the Redis docker container or directly).
+# Connection command: docker exec -it chat_redis redis-cli
+
+# 1. List all active presence keys in Redis
+KEYS presence:*
+
+# 2. List all active user socket connections
+KEYS connections:*
+
+# 3. List socket-to-user mappings
+KEYS socket:*
+
+# 4. Check details of a specific user presence key (Replace UUID placeholder)
+# GET presence:UUID
+# Returns: "online" / "offline" (or value set by realtime-service)
+
+# 5. Check active socket IDs mapped to a specific user (Replace UUID placeholder)
+# SMEMBERS connections:UUID
+# Returns a list of socket connection IDs for that user
+
+# 6. Verify TTL of a user presence key
+# TTL presence:UUID
+# If configured as a sliding transient state, this should have a positive TTL (e.g. 60 seconds)

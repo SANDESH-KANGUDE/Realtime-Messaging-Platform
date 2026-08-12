@@ -1,0 +1,5 @@
+com\company\chatplatform\gateway\filter\GatewayJwtFilter$Config.class
+com\company\chatplatform\gateway\filter\GatewayCorrelationIdFilter.class
+com\company\chatplatform\gateway\filter\GatewayJwtFilter.class
+com\company\chatplatform\gateway\GatewayApplication.class
+com\company\chatplatform\gateway\config\GatewaySecurityConfig.class

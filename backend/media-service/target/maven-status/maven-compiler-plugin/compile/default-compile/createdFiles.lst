@@ -1,0 +1,12 @@
+com\company\chatplatform\mediaservice\dto\UploadUrlRequest.class
+com\company\chatplatform\mediaservice\dto\UploadUrlResponse.class
+com\company\chatplatform\mediaservice\service\MediaService.class
+com\company\chatplatform\mediaservice\domain\repository\OutboxEventRepository.class
+com\company\chatplatform\mediaservice\controller\MediaController.class
+com\company\chatplatform\mediaservice\domain\repository\MediaMetadataRepository.class
+com\company\chatplatform\mediaservice\dto\ConfirmUploadRequest.class
+com\company\chatplatform\mediaservice\dto\MediaMetadataDto.class
+com\company\chatplatform\mediaservice\MediaApplication.class
+com\company\chatplatform\mediaservice\domain\entity\MediaMetadataEntity.class
+com\company\chatplatform\mediaservice\service\OutboxPublisherScheduler.class
+com\company\chatplatform\mediaservice\domain\entity\OutboxEventEntity.class

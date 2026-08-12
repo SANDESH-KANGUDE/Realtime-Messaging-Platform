@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS notifications (
+    id VARCHAR(36) PRIMARY KEY,
+    recipient_id VARCHAR(36) NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    body TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'SYSTEM', -- MESSAGE, FRIEND_REQUEST, PAYMENT, SYSTEM
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_id);

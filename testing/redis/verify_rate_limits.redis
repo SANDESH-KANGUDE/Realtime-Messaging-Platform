@@ -1,0 +1,17 @@
+# Redis Rate Limiting Verification Commands
+# You can execute these commands in redis-cli to check Spring Cloud Gateway rate limiting states.
+# Connection command: docker exec -it chat_redis redis-cli
+
+# 1. List keys associated with rate limiting (typically configured under request_rate_limiter namespace)
+KEYS *request_rate_limiter*
+
+# 2. Check the token count of a sliding window rate-limiter bucket (Replace placeholders)
+# KEYS:
+#  - request_rate_limiter.{userId}.tokens (Remaining tokens in bucket)
+#  - request_rate_limiter.{userId}.timestamp (Last replenishment timestamp)
+
+# 3. Retrieve the remaining token count (Replenished based on configure rate limits)
+# GET request_rate_limiter.UUID.tokens
+
+# 4. View TTL on rate-limit counter keys (should match the rate window, e.g. 1 minute)
+# TTL request_rate_limiter.UUID.tokens

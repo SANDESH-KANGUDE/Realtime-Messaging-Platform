@@ -1,0 +1,9 @@
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\dto\ApiResponse.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\dto\ErrorResponse.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\exception\BadRequestException.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\exception\BaseException.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\exception\ConflictException.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\exception\ForbiddenException.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\exception\ResourceNotFoundException.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\exception\UnauthorizedException.java
+F:\CDAC\realtime_chat_antigravity\backend\shared\common-core\src\main\java\com\company\chatplatform\common\core\util\UUIDv7Utils.java

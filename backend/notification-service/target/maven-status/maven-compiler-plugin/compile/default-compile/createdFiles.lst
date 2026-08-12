@@ -1,0 +1,7 @@
+com\company\chatplatform\notificationservice\domain\repository\NotificationRepository.class
+com\company\chatplatform\notificationservice\controller\NotificationController.class
+com\company\chatplatform\notificationservice\dto\NotificationDto.class
+com\company\chatplatform\notificationservice\domain\entity\NotificationEntity.class
+com\company\chatplatform\notificationservice\NotificationApplication.class
+com\company\chatplatform\notificationservice\listener\NotificationKafkaListener.class
+com\company\chatplatform\notificationservice\service\NotificationService.class

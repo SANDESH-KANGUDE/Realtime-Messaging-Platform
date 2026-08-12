@@ -1,0 +1,2 @@
+com\company\chatplatform\common\kafka\event\DomainEvent.class
+com\company\chatplatform\common\kafka\topics\EventTopics.class

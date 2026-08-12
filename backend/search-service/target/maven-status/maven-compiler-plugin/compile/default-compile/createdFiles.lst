@@ -1,0 +1,9 @@
+com\company\chatplatform\searchservice\service\SearchService.class
+com\company\chatplatform\searchservice\controller\SearchController.class
+com\company\chatplatform\searchservice\domain\document\SearchIndexDocument.class
+com\company\chatplatform\searchservice\domain\repository\SearchIndexRepository.class
+com\company\chatplatform\searchservice\SearchApplication.class
+com\company\chatplatform\searchservice\listener\SearchKafkaListener.class
+com\company\chatplatform\searchservice\provider\MongoSearchProvider.class
+com\company\chatplatform\searchservice\dto\SearchResultDto.class
+com\company\chatplatform\searchservice\provider\SearchProvider.class

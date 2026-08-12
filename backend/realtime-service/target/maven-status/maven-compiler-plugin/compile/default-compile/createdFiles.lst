@@ -1,0 +1,4 @@
+com\company\chatplatform\realtimeservice\RealtimeApplication.class
+com\company\chatplatform\realtimeservice\service\PresenceService.class
+com\company\chatplatform\realtimeservice\socket\SocketIOServerManager.class
+com\company\chatplatform\realtimeservice\listener\RealtimeKafkaListener.class

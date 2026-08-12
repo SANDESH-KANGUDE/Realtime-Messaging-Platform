@@ -1,0 +1,14 @@
+com\company\chatplatform\adminservice\dto\AuditLogDto.class
+com\company\chatplatform\adminservice\service\OutboxPublisherScheduler.class
+com\company\chatplatform\adminservice\dto\BanUserRequest.class
+com\company\chatplatform\adminservice\domain\repository\AuditLogRepository.class
+com\company\chatplatform\adminservice\service\AdminService.class
+com\company\chatplatform\adminservice\domain\entity\ModerationReportEntity.class
+com\company\chatplatform\adminservice\domain\entity\OutboxEventEntity.class
+com\company\chatplatform\adminservice\AdminApplication.class
+com\company\chatplatform\adminservice\domain\repository\ModerationReportRepository.class
+com\company\chatplatform\adminservice\dto\ReportUserRequest.class
+com\company\chatplatform\adminservice\controller\AdminController.class
+com\company\chatplatform\adminservice\domain\entity\AuditLogEntity.class
+com\company\chatplatform\adminservice\domain\repository\OutboxEventRepository.class
+com\company\chatplatform\adminservice\dto\ModerationReportDto.class

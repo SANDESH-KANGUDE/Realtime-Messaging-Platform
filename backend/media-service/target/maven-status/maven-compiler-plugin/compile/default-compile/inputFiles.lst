@@ -1,0 +1,12 @@
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\controller\MediaController.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\domain\entity\MediaMetadataEntity.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\domain\entity\OutboxEventEntity.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\domain\repository\MediaMetadataRepository.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\domain\repository\OutboxEventRepository.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\dto\ConfirmUploadRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\dto\MediaMetadataDto.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\dto\UploadUrlRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\dto\UploadUrlResponse.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\MediaApplication.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\service\MediaService.java
+F:\CDAC\realtime_chat_antigravity\backend\media-service\src\main\java\com\company\chatplatform\mediaservice\service\OutboxPublisherScheduler.java

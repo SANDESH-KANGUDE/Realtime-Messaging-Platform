@@ -1,0 +1,15 @@
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\ChatApplication.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\controller\ChatController.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\entity\ChatEntity.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\entity\ChatMemberEntity.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\entity\OutboxEventEntity.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\repository\ChatMemberRepository.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\repository\ChatRepository.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\repository\OutboxEventRepository.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\AddMemberRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\ChatDto.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\ChatMemberDto.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\CreateDirectChatRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\CreateGroupChatRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\service\ChatService.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\service\OutboxPublisherScheduler.java

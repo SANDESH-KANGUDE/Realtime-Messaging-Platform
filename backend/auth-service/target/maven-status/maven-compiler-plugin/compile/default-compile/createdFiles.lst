@@ -1,0 +1,16 @@
+com\company\chatplatform\authservice\service\AuthService.class
+com\company\chatplatform\authservice\service\OutboxPublisherScheduler.class
+com\company\chatplatform\authservice\domain\entity\Credential.class
+com\company\chatplatform\authservice\domain\entity\OutboxEventEntity.class
+com\company\chatplatform\authservice\dto\UserMeResponse.class
+com\company\chatplatform\authservice\dto\RegisterRequest.class
+com\company\chatplatform\authservice\AuthApplication.class
+com\company\chatplatform\authservice\dto\AuthResponse.class
+com\company\chatplatform\authservice\domain\entity\RefreshTokenEntity.class
+com\company\chatplatform\authservice\domain\repository\RefreshTokenRepository.class
+com\company\chatplatform\authservice\domain\repository\OutboxEventRepository.class
+com\company\chatplatform\authservice\dto\LoginRequest.class
+com\company\chatplatform\authservice\domain\repository\CredentialRepository.class
+com\company\chatplatform\authservice\dto\RefreshTokenRequest.class
+com\company\chatplatform\authservice\config\SecurityConfig.class
+com\company\chatplatform\authservice\controller\AuthController.class

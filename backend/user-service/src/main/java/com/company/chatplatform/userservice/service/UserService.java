@@ -70,6 +70,22 @@ public class UserService {
         if (request.getDisplayName() != null && !request.getDisplayName().isBlank()) {
             profile.setDisplayName(request.getDisplayName());
         }
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
+            java.util.Optional<UserProfile> existing = userProfileRepository.findByUsername(request.getUsername());
+            if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
+                throw new com.company.chatplatform.common.core.exception.BadRequestException("Username already taken", "USERNAME_ALREADY_TAKEN");
+            }
+            profile.setUsername(request.getUsername());
+        }
+        if (request.getPhoneNumber() != null) {
+            if (!request.getPhoneNumber().isBlank()) {
+                java.util.Optional<UserProfile> existing = userProfileRepository.findByPhoneNumber(request.getPhoneNumber());
+                if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
+                    throw new com.company.chatplatform.common.core.exception.BadRequestException("Phone number already registered", "PHONE_NUMBER_ALREADY_REGISTERED");
+                }
+            }
+            profile.setPhoneNumber(request.getPhoneNumber());
+        }
         if (request.getAvatarUrl() != null) {
             profile.setAvatarUrl(request.getAvatarUrl());
         }
@@ -87,6 +103,8 @@ public class UserService {
             String payloadJson = objectMapper.writeValueAsString(Map.of(
                     "userId", userId,
                     "displayName", profile.getDisplayName(),
+                    "username", profile.getUsername(),
+                    "email", profile.getEmail(),
                     "avatarUrl", profile.getAvatarUrl() != null ? profile.getAvatarUrl() : ""
             ));
             OutboxEventEntity outbox = new OutboxEventEntity(
@@ -105,7 +123,12 @@ public class UserService {
     }
 
     public List<UserProfileDto> searchUsers(String query) {
-        return userProfileRepository.findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(query, query)
+        String trimmed = query.trim();
+        java.util.Optional<UserProfile> byEmail = userProfileRepository.findByEmail(trimmed);
+        if (byEmail.isPresent()) {
+            return java.util.List.of(toDto(byEmail.get()));
+        }
+        return userProfileRepository.findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(trimmed, trimmed)
                 .stream()
                 .map(this::toDto)
                 .toList();

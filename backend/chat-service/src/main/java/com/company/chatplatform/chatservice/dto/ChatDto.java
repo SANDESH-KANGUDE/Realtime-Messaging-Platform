@@ -10,10 +10,24 @@ public class ChatDto {
     private String createdBy;
     private List<ChatMemberDto> members;
     private boolean pinned;
+    private boolean archived;
     private String createdAt;
     private String updatedAt;
 
     public ChatDto() {}
+
+    public ChatDto(String id, String type, String title, String avatarUrl, String createdBy, List<ChatMemberDto> members, boolean pinned, boolean archived, String createdAt, String updatedAt) {
+        this.id = id;
+        this.type = type;
+        this.title = title;
+        this.avatarUrl = avatarUrl;
+        this.createdBy = createdBy;
+        this.members = members;
+        this.pinned = pinned;
+        this.archived = archived;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 
     public ChatDto(String id, String type, String title, String avatarUrl, String createdBy, List<ChatMemberDto> members, boolean pinned, String createdAt, String updatedAt) {
         this.id = id;
@@ -23,6 +37,7 @@ public class ChatDto {
         this.createdBy = createdBy;
         this.members = members;
         this.pinned = pinned;
+        this.archived = false;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -81,6 +96,14 @@ public class ChatDto {
 
     public void setPinned(boolean pinned) {
         this.pinned = pinned;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
     }
 
     public String getCreatedAt() {

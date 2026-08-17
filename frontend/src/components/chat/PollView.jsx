@@ -43,33 +43,43 @@ export const PollView = ({ message }) => {
               key={index}
               onClick={() => handleVote(index)}
               disabled={isLoading}
-              className={`w-full text-left p-3 rounded-lg border transition-all duration-150 flex flex-col relative overflow-hidden cursor-pointer ${
+              className={`w-full text-left py-2 px-3 rounded-lg border transition-all duration-150 flex items-center justify-between relative overflow-hidden cursor-pointer ${
                 isSelected
-                  ? 'border-aura-teal-500 bg-aura-teal-500/10'
-                  : 'border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/20 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                  ? 'border-aura-teal-500 bg-aura-teal-500/5'
+                  : 'border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/20 hover:bg-slate-100/60 dark:hover:bg-slate-800/20'
               }`}
             >
-              {/* Progress visual background */}
+              {/* Progress background indicator fill */}
               <div 
-                className="absolute top-0 left-0 bottom-0 bg-aura-teal-500/10 transition-all duration-300"
+                className="absolute top-0 left-0 bottom-0 bg-aura-teal-500/10 transition-all duration-300 z-0"
                 style={{ width: `${percentage}%` }}
               />
 
-              <div className="flex justify-between items-center w-full z-10 text-sm font-semibold">
-                <span className="text-slate-700 dark:text-slate-300 truncate mr-2">
+              {/* Main content layer */}
+              <div className="flex items-center gap-2.5 z-10 flex-1 truncate mr-2">
+                {/* Circular indicator */}
+                <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
+                  isSelected ? 'border-aura-teal-500 bg-aura-teal-500 text-white' : 'border-slate-300 dark:border-slate-700 bg-transparent'
+                }`}>
+                  {isSelected && <Check size={10} strokeWidth={3} />}
+                </div>
+
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
                   {option}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  {voteCount} votes ({percentage}%)
-                  {isSelected && <Check size={14} className="text-aura-teal-500" />}
-                </span>
+              </div>
+
+              {/* Vote count and percentage indicator */}
+              <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 z-10 flex-shrink-0 flex items-center gap-1.5">
+                <span>{voteCount} {voteCount === 1 ? 'vote' : 'votes'}</span>
+                <span className="text-[9px] text-slate-400">({percentage}%)</span>
               </div>
             </button>
           );
         })}
       </div>
       <div className="text-[10px] text-slate-400 text-right">
-        Total: {totalVotes} votes
+        Total: {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
       </div>
     </div>
   );

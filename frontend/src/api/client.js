@@ -73,15 +73,21 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Send refresh token request (browser attaches HttpOnly cookie automatically)
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        if (!storedRefreshToken) {
+          throw new Error('No refresh token available');
+        }
+
         const refreshResponse = await axios.post(
           `${API_BASE_URL}/api/v1/auth/refresh`,
-          {},
-          { withCredentials: true }
+          { refreshToken: storedRefreshToken }
         );
 
         const newAccessToken = refreshResponse.data.data.accessToken;
-        const user = refreshResponse.data.data.user || store.getState().auth.user;
+        const newRefreshToken = refreshResponse.data.data.refreshToken;
+        
+        localStorage.setItem('refreshToken', newRefreshToken);
+        const user = refreshResponse.data.data.user || (store ? store.getState().auth.user : null);
 
         if (store) {
           store.dispatch(setCredentials({ accessToken: newAccessToken, user }));
@@ -99,6 +105,7 @@ apiClient.interceptors.response.use(
 
         // If refresh fails, log out the user
         if (store) {
+          localStorage.removeItem('refreshToken');
           store.dispatch(logOut());
         }
         return Promise.reject(refreshError);

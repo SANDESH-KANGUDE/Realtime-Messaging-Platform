@@ -7,7 +7,7 @@ A cloud-native, event-driven, production-grade microservices messaging platform 
 ## Architectural Highlights
 
 - **Monorepo Layout**: `/backend` (Maven multi-module), `/frontend` (React JS), `/infrastructure`, `/docs`.
-- **Database-Per-Service**: PostgreSQL (Auth, User, Chat, Notification, Media, Admin, Payment), MongoDB (Message, Search), Redis (Realtime presence).
+- **Database-Per-Service**: PostgreSQL (Auth, User, Chat, Notification, Media), MongoDB (Message, Search), Redis (Realtime presence).
 - **Transactional Outbox Pattern**: Implemented for all Kafka event producers (PostgreSQL services outbox table + MongoDB `outbox_messages` collection).
 - **Flyway Migrations**: SQL schema migrations per PostgreSQL service.
 - **Spring Boot Actuator**: Probes `/actuator/health/liveness` and `/actuator/health/readiness` enabled across all backend microservices.
@@ -36,9 +36,8 @@ realtime_chat_antigravity/
 │   ├── realtime-service/ (Port 8085 - Socket.IO)
 │   ├── notification-service/ (Port 8086)
 │   ├── media-service/ (Port 8087)
-│   ├── search-service/ (Port 8088)
-│   ├── admin-service/ (Port 8089)
-│   └── payment-service/ (Port 8090)
+│   └── search-service/ (Port 8088)
+│   Note: Admin and Payment services are defined as future scope.
 ├── frontend/ (React + Vite + JavaScript)
 ├── docs/ (ADRs & Handbook)
 └── docker-compose.yml

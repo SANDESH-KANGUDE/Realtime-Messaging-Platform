@@ -23,7 +23,7 @@ class SearchServiceTest {
 
     @Test
     void search_Success() {
-        SearchResultDto res = new SearchResultDto("msg-1", "MESSAGE", "Message", "Hello", "2026-07-21T00:00:00Z");
+        SearchResultDto res = new SearchResultDto("msg-1", "MESSAGE", "Message", "Hello", "chat-1", "2026-07-21T00:00:00Z");
         Mockito.when(searchProvider.search("Hello", "ALL")).thenReturn(List.of(res));
 
         List<SearchResultDto> results = searchService.search("Hello", "ALL");

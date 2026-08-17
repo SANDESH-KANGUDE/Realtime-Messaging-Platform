@@ -180,16 +180,20 @@ public class ChatService {
     private ChatDto toDto(ChatEntity chat, String currentUserId) {
         List<ChatMemberDto> memberDtos = chatMemberRepository.findByChatId(chat.getId())
                 .stream()
-                .map(m -> new ChatMemberDto(m.getId(), m.getChatId(), m.getUserId(), m.getRole(), m.isPinned(), m.getJoinedAt().toString()))
+                .map(m -> new ChatMemberDto(m.getId(), m.getChatId(), m.getUserId(), m.getRole(), m.isPinned(), m.isArchived(), m.getTheme(), m.getJoinedAt().toString()))
                 .toList();
 
         boolean pinned = false;
+        boolean archived = false;
         if (currentUserId != null) {
-            pinned = memberDtos.stream()
+            ChatMemberDto currentMember = memberDtos.stream()
                     .filter(m -> m.getUserId().equals(currentUserId))
-                    .map(ChatMemberDto::isPinned)
                     .findFirst()
-                    .orElse(false);
+                    .orElse(null);
+            if (currentMember != null) {
+                pinned = currentMember.isPinned();
+                archived = currentMember.isArchived();
+            }
         }
 
         return new ChatDto(
@@ -200,6 +204,7 @@ public class ChatService {
                 chat.getCreatedBy(),
                 memberDtos,
                 pinned,
+                archived,
                 chat.getCreatedAt().toString(),
                 chat.getUpdatedAt().toString()
         );
@@ -219,5 +224,27 @@ public class ChatService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize outbox event payload", e);
         }
+    }
+
+    public List<String> getChatMemberIds(String chatId) {
+        return chatMemberRepository.findByChatId(chatId).stream()
+                .map(ChatMemberEntity::getUserId)
+                .toList();
+    }
+
+    @Transactional
+    public void archiveChat(String userId, String chatId, boolean archived) {
+        ChatMemberEntity member = chatMemberRepository.findByChatIdAndUserId(chatId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found", "MEMBER_NOT_FOUND"));
+        member.setArchived(archived);
+        chatMemberRepository.save(member);
+    }
+
+    @Transactional
+    public void updateChatTheme(String userId, String chatId, String theme) {
+        ChatMemberEntity member = chatMemberRepository.findByChatIdAndUserId(chatId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found", "MEMBER_NOT_FOUND"));
+        member.setTheme(theme);
+        chatMemberRepository.save(member);
     }
 }

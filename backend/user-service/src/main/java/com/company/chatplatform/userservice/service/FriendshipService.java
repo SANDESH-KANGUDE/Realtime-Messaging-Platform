@@ -104,6 +104,25 @@ public class FriendshipService {
         friendship.setUpdatedAt(Instant.now());
         friendshipRepository.save(friendship);
 
+        // Outbox event for friend request accepted
+        try {
+            String payloadJson = objectMapper.writeValueAsString(Map.of(
+                    "friendshipId", friendship.getId(),
+                    "requesterId", friendship.getRequesterId(),
+                    "addresseeId", friendship.getAddresseeId()
+            ));
+            OutboxEventEntity outbox = new OutboxEventEntity(
+                    UUIDv7Utils.generateString(),
+                    "FRIENDSHIP",
+                    friendship.getId(),
+                    "friend.request.accepted.v1",
+                    payloadJson
+            );
+            outboxEventRepository.save(outbox);
+        } catch (Exception e) {
+            // Log warning but do not roll back transaction
+        }
+
         UserProfile friendProfile = userProfileRepository.findById(friendship.getRequesterId()).orElse(null);
         return new FriendshipDto(
                 friendship.getId(),

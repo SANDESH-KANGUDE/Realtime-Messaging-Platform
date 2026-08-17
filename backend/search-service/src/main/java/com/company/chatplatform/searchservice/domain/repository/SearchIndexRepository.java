@@ -15,4 +15,6 @@ public interface SearchIndexRepository extends MongoRepository<SearchIndexDocume
 
     @Query("{ $text: { $search: ?0 }, 'entityType': ?1 }")
     List<SearchIndexDocument> searchByTextAndType(String text, String entityType);
+
+    void deleteByEntityIdAndEntityType(String entityId, String entityType);
 }

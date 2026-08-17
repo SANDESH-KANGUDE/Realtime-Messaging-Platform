@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGetFriendRequestsQuery, useAcceptFriendRequestMutation } from '../../api/userApi';
+import { useCreateDirectChatMutation } from '../../api/chatApi';
 import { closeModal } from '../../store/slices/uiSlice';
 import { X, UserCheck, Loader } from 'lucide-react';
 
@@ -10,12 +11,16 @@ export const FriendRequestsModal = () => {
 
   const { data: requestsRes, isLoading } = useGetFriendRequestsQuery(undefined, { skip: !isOpen });
   const [acceptRequest, { isLoading: acceptLoading }] = useAcceptFriendRequestMutation();
+  const [createDirectChat] = useCreateDirectChatMutation();
 
   const requests = requestsRes?.data || [];
 
-  const handleAccept = async (id) => {
+  const handleAccept = async (id, requesterId) => {
     try {
       await acceptRequest(id).unwrap();
+      if (requesterId) {
+        await createDirectChat(requesterId).unwrap();
+      }
     } catch (err) {
       console.error(err);
     }
@@ -61,7 +66,7 @@ export const FriendRequestsModal = () => {
               </div>
 
               <button
-                onClick={() => handleAccept(req.id)}
+                onClick={() => handleAccept(req.id, req.requesterId)}
                 disabled={acceptLoading}
                 className="px-3 py-1 bg-aura-teal-500 hover:bg-aura-teal-600 text-white rounded text-[10px] font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
               >

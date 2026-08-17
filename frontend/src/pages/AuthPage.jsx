@@ -42,7 +42,6 @@ export const AuthPage = () => {
       email: '',
       phoneNumber: '',
       password: '',
-      displayName: '',
     }
   });
 
@@ -63,14 +62,13 @@ export const AuthPage = () => {
         
         if (id.includes('@')) {
           payload.email = id;
-        } else if (/^\+?[0-9]{10,15}$/.test(id)) {
-          payload.phoneNumber = id;
         } else {
-          payload.username = id;
+          payload.phoneNumber = id;
         }
 
         const res = await loginUser(payload).unwrap();
-        const { accessToken, userId, email, role } = res.data;
+        const { accessToken, refreshToken, userId, email, role } = res.data;
+        localStorage.setItem('refreshToken', refreshToken);
         dispatch(setCredentials({ accessToken, user: { userId, email, role } }));
         connectSocket(accessToken);
         navigate('/chat');
@@ -80,7 +78,7 @@ export const AuthPage = () => {
           email: data.email.trim(),
           phoneNumber: data.phoneNumber.trim(),
           password: data.password,
-          displayName: data.displayName?.trim() || data.username.trim(),
+          displayName: data.username.trim(),
         };
 
         await registerUser(payload).unwrap();
@@ -124,11 +122,11 @@ export const AuthPage = () => {
           {isLogin ? (
             <div>
               <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Username, Email or Phone
+                Email or Phone Number
               </label>
               <input
                 type="text"
-                placeholder="Enter details..."
+                placeholder="john@example.com or +1234567890"
                 {...registerField('identifier')}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-aura-teal-500"
               />
@@ -183,20 +181,6 @@ export const AuthPage = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Display Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  {...registerField('displayName')}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-aura-teal-500"
-                />
-                {errors.displayName && (
-                  <p className="text-xs text-red-500 mt-1">{errors.displayName.message}</p>
-                )}
-              </div>
             </>
           )}
 

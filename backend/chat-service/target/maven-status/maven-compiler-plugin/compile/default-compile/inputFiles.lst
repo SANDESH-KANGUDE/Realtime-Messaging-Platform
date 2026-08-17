@@ -1,5 +1,6 @@
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\ChatApplication.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\controller\ChatController.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\controller\InternalChatController.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\entity\ChatEntity.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\entity\ChatMemberEntity.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\domain\entity\OutboxEventEntity.java

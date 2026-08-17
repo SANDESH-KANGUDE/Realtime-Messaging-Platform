@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -82,9 +83,17 @@ public class MessageService {
             throw new ForbiddenException("Not authorized to edit this message", "UNAUTHORIZED");
         }
 
+        java.time.Instant limitTime = java.time.Instant.now().minus(java.time.Duration.ofMinutes(3));
+        if (doc.getCreatedAt().isBefore(limitTime)) {
+            throw new com.company.chatplatform.common.core.exception.BadRequestException("Edit time window (3 minutes) has expired", "TIME_WINDOW_EXPIRED");
+        }
+
         doc.setContent(request.getContent());
+        if ("POLL".equalsIgnoreCase(doc.getType())) {
+            doc.setPollQuestion(request.getContent());
+        }
         doc.setEdited(true);
-        doc.setUpdatedAt(Instant.now());
+        doc.setUpdatedAt(java.time.Instant.now());
         messageRepository.save(doc);
 
         saveOutboxEvent(EventTopics.MESSAGE_EDITED, messageId, Map.of("messageId", messageId, "chatId", doc.getChatId(), "content", request.getContent()));
@@ -100,9 +109,14 @@ public class MessageService {
             throw new ForbiddenException("Not authorized to delete this message", "UNAUTHORIZED");
         }
 
+        java.time.Instant limitTime = java.time.Instant.now().minus(java.time.Duration.ofMinutes(3));
+        if (doc.getCreatedAt().isBefore(limitTime)) {
+            throw new com.company.chatplatform.common.core.exception.BadRequestException("Delete time window (3 minutes) has expired", "TIME_WINDOW_EXPIRED");
+        }
+
         doc.setDeleted(true);
         doc.setContent("[Message deleted]");
-        doc.setUpdatedAt(Instant.now());
+        doc.setUpdatedAt(java.time.Instant.now());
         messageRepository.save(doc);
 
         saveOutboxEvent(EventTopics.MESSAGE_DELETED, messageId, Map.of("messageId", messageId, "chatId", doc.getChatId()));
@@ -120,14 +134,47 @@ public class MessageService {
         return toDto(doc);
     }
 
+    @Transactional
     public void markAsRead(String userId, String messageId) {
         MessageDocument doc = messageRepository.findById(messageId).orElse(null);
         if (doc != null) {
-            boolean exists = doc.getReadReceipts().stream().anyMatch(r -> r.getUserId().equals(userId));
-            if (!exists) {
-                doc.getReadReceipts().add(new ReadReceiptDocument(userId));
-                messageRepository.save(doc);
+            if (!doc.getSenderId().equals(userId)) {
+                boolean exists = doc.getReadReceipts().stream().anyMatch(r -> r.getUserId().equals(userId));
+                if (!exists) {
+                    doc.getReadReceipts().add(new ReadReceiptDocument(userId));
+                    messageRepository.save(doc);
+                    saveOutboxEvent("message.read.v1", doc.getId(), Map.of(
+                            "messageId", doc.getId(),
+                            "chatId", doc.getChatId(),
+                            "userId", userId,
+                            "readCount", doc.getReadReceipts().size()
+                    ));
+                }
             }
+        }
+    }
+
+    public java.util.Map<String, Long> getUnreadCounts(String userId) {
+        List<MessageDocument> unread = messageRepository.findUnreadMessagesForUser(userId);
+        return unread.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        MessageDocument::getChatId,
+                        java.util.stream.Collectors.counting()
+                ));
+    }
+
+    @Transactional
+    public void markChatAsRead(String userId, String chatId) {
+        List<MessageDocument> unread = messageRepository.findUnreadMessagesForChat(userId, chatId);
+        for (MessageDocument doc : unread) {
+            doc.getReadReceipts().add(new ReadReceiptDocument(userId));
+            messageRepository.save(doc);
+            saveOutboxEvent("message.read.v1", doc.getId(), Map.of(
+                    "messageId", doc.getId(),
+                    "chatId", chatId,
+                    "userId", userId,
+                    "readCount", doc.getReadReceipts().size()
+            ));
         }
     }
 
@@ -184,6 +231,10 @@ public class MessageService {
                 .map(v -> new PollVoteDto(v.getUserId(), v.getOptionIndex()))
                 .toList() : new ArrayList<>();
 
+        List<ReadReceiptDto> readReceiptDtos = doc.getReadReceipts() != null ? doc.getReadReceipts().stream()
+                .map(r -> new ReadReceiptDto(r.getUserId(), r.getReadAt().toString()))
+                .toList() : new ArrayList<>();
+
         int readCount = doc.getReadReceipts() != null ? doc.getReadReceipts().size() : 0;
 
         return new MessageDto(
@@ -201,6 +252,7 @@ public class MessageService {
                 doc.getPollOptions(),
                 pollVoteDtos,
                 reactions,
+                readReceiptDtos,
                 readCount,
                 doc.getCreatedAt().toString(),
                 doc.getUpdatedAt().toString()

@@ -39,6 +39,20 @@ export const chatApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Chats'],
     }),
+    archiveChat: builder.mutation({
+      query: (chatId) => ({
+        url: `/api/v1/chats/${chatId}/archive`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Chats'],
+    }),
+    unarchiveChat: builder.mutation({
+      query: (chatId) => ({
+        url: `/api/v1/chats/${chatId}/unarchive`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Chats'],
+    }),
     addGroupMember: builder.mutation({
       query: ({ chatId, userId }) => ({
         url: `/api/v1/chats/${chatId}/members`,
@@ -61,6 +75,13 @@ export const chatApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Chats'],
     }),
+    updateChatTheme: builder.mutation({
+      query: ({ chatId, theme }) => ({
+        url: `/api/v1/chats/${chatId}/theme?theme=${encodeURIComponent(theme)}`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Chats'],
+    }),
   }),
 });
 
@@ -70,8 +91,11 @@ export const {
   useCreateGroupChatMutation,
   usePinChatMutation,
   useUnpinChatMutation,
+  useArchiveChatMutation,
+  useUnarchiveChatMutation,
   useAddGroupMemberMutation,
   useRemoveGroupMemberMutation,
   useUpdateMemberRoleMutation,
+  useUpdateChatThemeMutation,
 } = chatApi;
 export default chatApi;

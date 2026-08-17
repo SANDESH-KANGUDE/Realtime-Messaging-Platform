@@ -9,7 +9,6 @@ const uiSlice = createSlice({
       profile: false,
       archivedChats: false,
       friendRequests: false,
-      payments: false,
     },
     messageSearchActive: false,
   },

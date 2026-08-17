@@ -54,4 +54,36 @@ public class MediaController {
         MediaMetadataDto details = mediaService.getMediaDetails(mediaId);
         return ResponseEntity.ok(ApiResponse.success(details));
     }
+
+    @PutMapping("/mock-storage/uploads/{uploaderId}/{fileName}")
+    public ResponseEntity<Void> uploadMockFile(
+            @PathVariable("uploaderId") String uploaderId,
+            @PathVariable("fileName") String fileName,
+            @RequestBody byte[] content
+    ) throws Exception {
+        java.nio.file.Path dir = java.nio.file.Paths.get("uploads", uploaderId);
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Path file = dir.resolve(fileName);
+        java.nio.file.Files.write(file, content);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/files/uploads/{uploaderId}/{fileName}")
+    public ResponseEntity<byte[]> getMockFile(
+            @PathVariable("uploaderId") String uploaderId,
+            @PathVariable("fileName") String fileName
+    ) throws Exception {
+        java.nio.file.Path file = java.nio.file.Paths.get("uploads", uploaderId, fileName);
+        if (!java.nio.file.Files.exists(file)) {
+            return ResponseEntity.notFound().build();
+        }
+        byte[] content = java.nio.file.Files.readAllBytes(file);
+        String contentType = java.nio.file.Files.probeContentType(file);
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, contentType)
+                .body(content);
+    }
 }

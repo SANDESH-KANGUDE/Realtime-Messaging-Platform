@@ -7,6 +7,10 @@ public class UpdateProfileRequest {
     @Size(min = 2, max = 100, message = "Display name must be between 2 and 100 characters")
     private String displayName;
 
+    private String username;
+
+    private String phoneNumber;
+
     private String avatarUrl;
 
     @Size(max = 500, message = "Bio must not exceed 500 characters")
@@ -16,6 +20,22 @@ public class UpdateProfileRequest {
     private String statusMessage;
 
     public UpdateProfileRequest() {}
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
 
     public String getDisplayName() {
         return displayName;

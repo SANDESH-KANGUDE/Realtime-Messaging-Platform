@@ -12,23 +12,35 @@ const socketSlice = createSlice({
       state.connected = action.payload;
     },
     setTypingStarted: (state, action) => {
+      console.log('[SocketSlice] setTypingStarted payload:', action.payload);
       const { chatId, userId } = action.payload;
-      if (!state.typingUsers[chatId]) {
-        state.typingUsers[chatId] = [];
+      const currentTypers = state.typingUsers[chatId] || [];
+      if (!currentTypers.includes(userId)) {
+        state.typingUsers = {
+          ...state.typingUsers,
+          [chatId]: [...currentTypers, userId]
+        };
       }
-      if (!state.typingUsers[chatId].includes(userId)) {
-        state.typingUsers[chatId].push(userId);
-      }
+      console.log('[SocketSlice] setTypingStarted updated typingUsers:', JSON.stringify(state.typingUsers));
     },
     setTypingStopped: (state, action) => {
+      console.log('[SocketSlice] setTypingStopped payload:', action.payload);
       const { chatId, userId } = action.payload;
       if (state.typingUsers[chatId]) {
-        state.typingUsers[chatId] = state.typingUsers[chatId].filter(id => id !== userId);
+        const updatedTypers = state.typingUsers[chatId].filter(id => id !== userId);
+        state.typingUsers = {
+          ...state.typingUsers,
+          [chatId]: updatedTypers
+        };
       }
+      console.log('[SocketSlice] setTypingStopped updated typingUsers:', JSON.stringify(state.typingUsers));
     },
     setPresenceUpdated: (state, action) => {
       const { userId, status } = action.payload;
-      state.onlineUsers[userId] = status;
+      state.onlineUsers = {
+        ...state.onlineUsers,
+        [userId]: status
+      };
     },
     clearSocketState: (state) => {
       state.connected = false;

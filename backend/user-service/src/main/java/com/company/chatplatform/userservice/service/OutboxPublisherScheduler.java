@@ -26,7 +26,7 @@ public class OutboxPublisherScheduler {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 200)
     @Transactional
     public void publishPendingEvents() {
         List<OutboxEventEntity> pendingEvents = outboxEventRepository.findTop50ByStatusOrderByCreatedAtAsc("PENDING");

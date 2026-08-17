@@ -19,6 +19,7 @@ public class MongoSearchProvider implements SearchProvider {
 
     @Override
     public void indexEntity(String entityId, String entityType, String title, String content, String metadata) {
+        searchIndexRepository.deleteByEntityIdAndEntityType(entityId, entityType);
         SearchIndexDocument doc = new SearchIndexDocument(
                 UUIDv7Utils.generateString(),
                 entityId,
@@ -44,6 +45,7 @@ public class MongoSearchProvider implements SearchProvider {
                 d.getEntityType(),
                 d.getTitle(),
                 d.getContent(),
+                d.getMetadata(),
                 d.getCreatedAt().toString()
         )).toList();
     }

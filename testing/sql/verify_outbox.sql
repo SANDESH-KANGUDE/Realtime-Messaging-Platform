@@ -1,5 +1,5 @@
 -- Verify Transactional Outbox State in PostgreSQL
--- Used across services: auth-service, user-service, chat-service, media-service, admin-service, payment-service
+-- Used across services: auth-service, user-service, chat-service, media-service
 
 -- 1. Check Outbox Table Content in Auth Schema
 SET search_path TO auth_schema;
@@ -28,13 +28,6 @@ LIMIT 20;
 
 -- 5. Check Outbox in Chat Schema
 SET search_path TO chat_schema;
-SELECT id, event_type, status, attempts, created_at, processed_at 
-FROM outbox_events 
-ORDER BY created_at DESC 
-LIMIT 20;
-
--- 6. Check Outbox in Payment Schema
-SET search_path TO payment_schema;
 SELECT id, event_type, status, attempts, created_at, processed_at 
 FROM outbox_events 
 ORDER BY created_at DESC 

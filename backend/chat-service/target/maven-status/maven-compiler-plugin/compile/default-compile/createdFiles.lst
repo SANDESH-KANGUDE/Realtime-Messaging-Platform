@@ -2,6 +2,7 @@ com\company\chatplatform\chatservice\dto\AddMemberRequest.class
 com\company\chatplatform\chatservice\dto\CreateDirectChatRequest.class
 com\company\chatplatform\chatservice\domain\entity\OutboxEventEntity.class
 com\company\chatplatform\chatservice\domain\entity\ChatMemberEntity.class
+com\company\chatplatform\chatservice\controller\InternalChatController.class
 com\company\chatplatform\chatservice\domain\repository\OutboxEventRepository.class
 com\company\chatplatform\chatservice\ChatApplication.class
 com\company\chatplatform\chatservice\domain\repository\ChatMemberRepository.class

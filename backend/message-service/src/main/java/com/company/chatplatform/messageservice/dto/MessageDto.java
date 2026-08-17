@@ -17,13 +17,14 @@ public class MessageDto {
     private List<String> pollOptions;
     private List<PollVoteDto> pollVotes;
     private List<ReactionDto> reactions;
+    private List<ReadReceiptDto> readReceipts;
     private int readCount;
     private String createdAt;
     private String updatedAt;
 
     public MessageDto() {}
 
-    public MessageDto(String id, String chatId, String senderId, String content, String type, String mediaUrl, String replyToMessageId, boolean edited, boolean deleted, boolean pinned, String pollQuestion, List<String> pollOptions, List<PollVoteDto> pollVotes, List<ReactionDto> reactions, int readCount, String createdAt, String updatedAt) {
+    public MessageDto(String id, String chatId, String senderId, String content, String type, String mediaUrl, String replyToMessageId, boolean edited, boolean deleted, boolean pinned, String pollQuestion, List<String> pollOptions, List<PollVoteDto> pollVotes, List<ReactionDto> reactions, List<ReadReceiptDto> readReceipts, int readCount, String createdAt, String updatedAt) {
         this.id = id;
         this.chatId = chatId;
         this.senderId = senderId;
@@ -38,6 +39,7 @@ public class MessageDto {
         this.pollOptions = pollOptions;
         this.pollVotes = pollVotes;
         this.reactions = reactions;
+        this.readReceipts = readReceipts;
         this.readCount = readCount;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -153,6 +155,14 @@ public class MessageDto {
 
     public void setReactions(List<ReactionDto> reactions) {
         this.reactions = reactions;
+    }
+
+    public List<ReadReceiptDto> getReadReceipts() {
+        return readReceipts;
+    }
+
+    public void setReadReceipts(List<ReadReceiptDto> readReceipts) {
+        this.readReceipts = readReceipts;
     }
 
     public int getReadCount() {

@@ -11,6 +11,7 @@ F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\comp
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\MessageDto.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\PollVoteDto.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\ReactionDto.java
+F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\ReadReceiptDto.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\SendMessageRequest.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\VotePollRequest.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\MessageApplication.java

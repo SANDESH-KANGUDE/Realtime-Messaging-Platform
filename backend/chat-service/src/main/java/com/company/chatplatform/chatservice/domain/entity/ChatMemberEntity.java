@@ -23,8 +23,14 @@ public class ChatMemberEntity {
     @Column(name = "pinned", nullable = false)
     private boolean pinned = false;
 
+    @Column(name = "archived", nullable = false)
+    private boolean archived = false;
+
     @Column(name = "joined_at", nullable = false, updatable = false)
     private Instant joinedAt = Instant.now();
+
+    @Column(name = "theme", length = 50)
+    private String theme;
 
     public ChatMemberEntity() {}
 
@@ -33,6 +39,8 @@ public class ChatMemberEntity {
         this.chatId = chatId;
         this.userId = userId;
         this.role = role != null ? role : "MEMBER";
+        this.pinned = false;
+        this.archived = false;
         this.joinedAt = Instant.now();
     }
 
@@ -64,7 +72,23 @@ public class ChatMemberEntity {
         this.pinned = pinned;
     }
 
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
+    }
+
     public Instant getJoinedAt() {
         return joinedAt;
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
     }
 }

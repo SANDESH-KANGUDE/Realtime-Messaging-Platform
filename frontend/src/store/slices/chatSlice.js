@@ -8,10 +8,22 @@ const chatSlice = createSlice({
     mutes: {}, // { [chatId]: boolean }
     pins: {},  // { [chatId]: boolean }
     searchQuery: '',
+    unreadCounts: {}, // { [chatId]: number }
   },
   reducers: {
     setActiveChatId: (state, action) => {
       state.activeChatId = action.payload;
+    },
+    setUnreadCounts: (state, action) => {
+      state.unreadCounts = action.payload;
+    },
+    incrementUnreadCount: (state, action) => {
+      const chatId = action.payload;
+      state.unreadCounts[chatId] = (state.unreadCounts[chatId] || 0) + 1;
+    },
+    clearUnreadCount: (state, action) => {
+      const chatId = action.payload;
+      state.unreadCounts[chatId] = 0;
     },
     setArchivedViewActive: (state, action) => {
       state.archivedViewActive = action.payload;
@@ -39,6 +51,7 @@ const chatSlice = createSlice({
       state.mutes = {};
       state.pins = {};
       state.searchQuery = '';
+      state.unreadCounts = {};
     }
   }
 });
@@ -51,7 +64,10 @@ export const {
   setMutes,
   setPins,
   setSearchQuery,
-  clearChatState
+  clearChatState,
+  setUnreadCounts,
+  incrementUnreadCount,
+  clearUnreadCount
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

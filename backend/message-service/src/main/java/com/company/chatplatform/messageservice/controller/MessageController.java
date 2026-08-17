@@ -82,6 +82,25 @@ public class MessageController {
         return ResponseEntity.ok(ApiResponse.success(null, "Marked as read"));
     }
 
+    @GetMapping("/unread")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Long>>> getUnreadCounts(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        java.util.Map<String, Long> counts = messageService.getUnreadCounts(userId);
+        return ResponseEntity.ok(ApiResponse.success(counts));
+    }
+
+    @PostMapping("/chats/{chatId}/read")
+    public ResponseEntity<ApiResponse<Void>> markChatAsRead(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("chatId") String chatId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        messageService.markChatAsRead(userId, chatId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Chat marked as read"));
+    }
+
     @PutMapping("/{messageId}/pin")
     public ResponseEntity<ApiResponse<MessageDto>> pinMessage(
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId,

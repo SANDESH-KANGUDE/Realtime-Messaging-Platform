@@ -4,14 +4,20 @@ export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getProfile: builder.query({
       query: () => ({
-        url: '/api/v1/users/profile/me',
+        url: '/api/v1/users/me',
         method: 'GET',
       }),
       providesTags: ['Profile'],
     }),
+    getUserProfile: builder.query({
+      query: (userId) => ({
+        url: `/api/v1/users/${userId}`,
+        method: 'GET',
+      }),
+    }),
     updateProfile: builder.mutation({
       query: (data) => ({
-        url: '/api/v1/users/profile/me',
+        url: '/api/v1/users/me/profile',
         method: 'PUT',
         data,
       }),
@@ -22,6 +28,7 @@ export const userApi = api.injectEndpoints({
         url: `/api/v1/users/search?query=${encodeURIComponent(query)}`,
         method: 'GET',
       }),
+      providesTags: ['Friends'],
     }),
     getFriends: builder.query({
       query: () => ({
@@ -72,6 +79,7 @@ export const userApi = api.injectEndpoints({
 
 export const {
   useGetProfileQuery,
+  useGetUserProfileQuery,
   useUpdateProfileMutation,
   useLazySearchUsersQuery,
   useGetFriendsQuery,

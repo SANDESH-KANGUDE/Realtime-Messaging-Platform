@@ -25,6 +25,6 @@ const axiosBaseQuery = () => async ({ url, method, data, params, headers }) => {
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['Profile', 'Chats', 'Messages', 'Friends', 'Notifications', 'AdminReports'],
+  tagTypes: ['Profile', 'Chats', 'Messages', 'Friends', 'Notifications'],
   endpoints: () => ({}),
 });

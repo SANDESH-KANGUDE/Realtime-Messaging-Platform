@@ -25,8 +25,6 @@ public class GatewayJwtFilter extends AbstractGatewayFilterFactory<GatewayJwtFil
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/refresh",
-            "/api/v1/payments/webhook",
-            "/api/v1/payments/webhooks",
             "/actuator"
     );
 

@@ -26,7 +26,7 @@ public class OutboxPublisherScheduler {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 200)
     public void publishPendingEvents() {
         List<OutboxMessageDocument> pending = outboxMessageRepository.findByStatusOrderByCreatedAtAsc("PENDING", PageRequest.of(0, 50));
         if (pending.isEmpty()) {

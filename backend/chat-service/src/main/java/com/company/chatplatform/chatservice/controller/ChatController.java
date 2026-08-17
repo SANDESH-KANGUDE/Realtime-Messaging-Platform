@@ -111,4 +111,35 @@ public class ChatController {
         chatService.pinChat(currentUserId, chatId, false);
         return ResponseEntity.ok(ApiResponse.success(null, "Chat unpinned"));
     }
+
+    @PutMapping("/{chatId}/archive")
+    public ResponseEntity<ApiResponse<Void>> archiveChat(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("chatId") String chatId
+    ) {
+        String currentUserId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        chatService.archiveChat(currentUserId, chatId, true);
+        return ResponseEntity.ok(ApiResponse.success(null, "Chat archived"));
+    }
+
+    @PutMapping("/{chatId}/unarchive")
+    public ResponseEntity<ApiResponse<Void>> unarchiveChat(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("chatId") String chatId
+    ) {
+        String currentUserId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        chatService.archiveChat(currentUserId, chatId, false);
+        return ResponseEntity.ok(ApiResponse.success(null, "Chat unarchived"));
+    }
+
+    @PutMapping("/{chatId}/theme")
+    public ResponseEntity<ApiResponse<Void>> updateChatTheme(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("chatId") String chatId,
+            @RequestParam("theme") String theme
+    ) {
+        String currentUserId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        chatService.updateChatTheme(currentUserId, chatId, theme);
+        return ResponseEntity.ok(ApiResponse.success(null, "Chat theme updated"));
+    }
 }

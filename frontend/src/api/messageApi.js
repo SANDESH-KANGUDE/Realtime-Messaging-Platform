@@ -63,6 +63,20 @@ export const messageApi = api.injectEndpoints({
         data: { optionIndex },
       }),
     }),
+    getUnreadCounts: builder.query({
+      query: () => ({
+        url: '/api/v1/messages/unread',
+        method: 'GET',
+      }),
+      providesTags: ['Notifications'],
+    }),
+    markChatAsRead: builder.mutation({
+      query: (chatId) => ({
+        url: `/api/v1/messages/chats/${chatId}/read`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, chatId) => [{ type: 'Messages', id: chatId }, 'Chats', 'Notifications'],
+    }),
   }),
 });
 
@@ -77,5 +91,7 @@ export const {
   usePinMessageMutation,
   useUnpinMessageMutation,
   useVotePollMutation,
+  useGetUnreadCountsQuery,
+  useMarkChatAsReadMutation,
 } = messageApi;
 export default messageApi;

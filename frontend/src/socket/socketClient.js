@@ -8,11 +8,14 @@ import {
   handlePresenceUpdated,
   handleMessageReceived,
   handleMessageEdited,
-  handleMessageDeleted
+  handleMessageDeleted,
+  handleFriendRequestReceived,
+  handleFriendRequestAccepted,
+  handleMessageRead
 } from './socketHandlers';
 
 const SOCKET_URL = window.location.origin.includes('localhost')
-  ? 'http://localhost:8080' // Gateway single entry point (routes to 8085 internally)
+  ? 'http://localhost:8085' // Direct to Netty Socket.io server
   : window.location.origin;
 
 let socket = null;
@@ -24,6 +27,9 @@ export const connectSocket = (accessToken) => {
     auth: {
       token: accessToken
     },
+    query: {
+      token: accessToken
+    },
     transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: 5,
@@ -31,20 +37,26 @@ export const connectSocket = (accessToken) => {
   });
 
   socket.on(SOCKET_EVENTS.CONNECT, () => {
-    console.log('Socket.io connected securely to Gateway proxy');
+    console.log('Socket.io connected securely to Netty server');
     handleSocketConnect();
   });
 
-  socket.on(SOCKET_EVENTS.DISCONNECT, () => {
-    console.log('Socket.io disconnected');
+  socket.on('connect_error', (err) => {
+    console.error('Socket.io connection error:', err.message, err.description, err.context);
+  });
+
+  socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
+    console.log('Socket.io disconnected because:', reason);
     handleSocketDisconnect();
   });
 
   socket.on(SOCKET_EVENTS.TYPING_STARTED, (data) => {
+    console.log('[Socket] Received typing.started event:', data);
     handleTypingStarted(data);
   });
 
   socket.on(SOCKET_EVENTS.TYPING_STOPPED, (data) => {
+    console.log('[Socket] Received typing.stopped event:', data);
     handleTypingStopped(data);
   });
 
@@ -71,6 +83,20 @@ export const connectSocket = (accessToken) => {
   socket.on(SOCKET_EVENTS.MESSAGE_DELETED, (data) => {
     handleMessageDeleted(data);
   });
+
+  socket.on('message_read', (data) => {
+    handleMessageRead(data);
+  });
+
+  socket.on('friend_request_received', (data) => {
+    console.log('Realtime friend request received event:', data);
+    handleFriendRequestReceived(data);
+  });
+
+  socket.on('friend_request_accepted', (data) => {
+    console.log('Realtime friend request accepted event:', data);
+    handleFriendRequestAccepted(data);
+  });
 };
 
 export const disconnectSocket = () => {
@@ -89,7 +115,14 @@ export const joinRoom = (chatId) => {
 export const emitTyping = (chatId, isTyping) => {
   if (socket?.connected && chatId) {
     const event = isTyping ? SOCKET_EVENTS.TYPING_START : SOCKET_EVENTS.TYPING_STOP;
+    console.log(`[Socket] Emitting ${event} for chatId:`, chatId);
     socket.emit(event, { chatId });
+  }
+};
+
+export const queryPresence = (userId) => {
+  if (socket?.connected && userId) {
+    socket.emit('query_presence', { userId });
   }
 };
 

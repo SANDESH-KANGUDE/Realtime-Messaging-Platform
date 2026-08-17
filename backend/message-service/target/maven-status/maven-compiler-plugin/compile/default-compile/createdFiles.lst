@@ -6,6 +6,7 @@ com\company\chatplatform\messageservice\domain\repository\OutboxMessageRepositor
 com\company\chatplatform\messageservice\domain\repository\MessageRepository.class
 com\company\chatplatform\messageservice\dto\MessageDto.class
 com\company\chatplatform\messageservice\dto\EditMessageRequest.class
+com\company\chatplatform\messageservice\dto\ReadReceiptDto.class
 com\company\chatplatform\messageservice\domain\document\ReadReceiptDocument.class
 com\company\chatplatform\messageservice\dto\AddReactionRequest.class
 com\company\chatplatform\messageservice\service\MessageService.class

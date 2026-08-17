@@ -6,9 +6,22 @@ public class ChatMemberDto {
     private String userId;
     private String role;
     private boolean pinned;
+    private boolean archived;
+    private String theme;
     private String joinedAt;
 
     public ChatMemberDto() {}
+
+    public ChatMemberDto(String id, String chatId, String userId, String role, boolean pinned, boolean archived, String theme, String joinedAt) {
+        this.id = id;
+        this.chatId = chatId;
+        this.userId = userId;
+        this.role = role;
+        this.pinned = pinned;
+        this.archived = archived;
+        this.theme = theme;
+        this.joinedAt = joinedAt;
+    }
 
     public ChatMemberDto(String id, String chatId, String userId, String role, boolean pinned, String joinedAt) {
         this.id = id;
@@ -16,6 +29,8 @@ public class ChatMemberDto {
         this.userId = userId;
         this.role = role;
         this.pinned = pinned;
+        this.archived = false;
+        this.theme = null;
         this.joinedAt = joinedAt;
     }
 
@@ -57,6 +72,22 @@ public class ChatMemberDto {
 
     public void setPinned(boolean pinned) {
         this.pinned = pinned;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
     }
 
     public String getJoinedAt() {

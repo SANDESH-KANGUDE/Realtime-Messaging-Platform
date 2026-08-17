@@ -58,18 +58,6 @@ spring:
             - Path=/api/v1/search/**
           filters:
             - GatewayJwtFilter
-        - id: admin-service
-          uri: http://localhost:8089
-          predicates:
-            - Path=/api/v1/admin/**
-          filters:
-            - GatewayJwtFilter
-        - id: payment-service
-          uri: http://localhost:8090
-          predicates:
-            - Path=/api/v1/payments/**
-          filters:
-            - GatewayJwtFilter
         - id: realtime-service
           uri: ws://localhost:8085
           predicates:

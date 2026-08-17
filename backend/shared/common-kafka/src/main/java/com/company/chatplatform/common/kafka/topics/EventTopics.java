@@ -9,11 +9,8 @@ public class EventTopics {
     public static final String MESSAGE_SENT = "message.sent.v1";
     public static final String MESSAGE_EDITED = "message.edited.v1";
     public static final String MESSAGE_DELETED = "message.deleted.v1";
+    public static final String MESSAGE_READ = "message.read.v1";
     public static final String MEDIA_UPLOADED = "media.uploaded.v1";
-    public static final String PAYMENT_COMPLETED = "payment.completed.v1";
-    public static final String SUBSCRIPTION_ACTIVATED = "subscription.activated.v1";
-    public static final String SUBSCRIPTION_EXPIRED = "subscription.expired.v1";
-    public static final String ADMIN_USER_BANNED = "admin.user.banned.v1";
 
     private EventTopics() {}
 }

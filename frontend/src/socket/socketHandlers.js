@@ -4,6 +4,7 @@ import {
   setTypingStopped, 
   setPresenceUpdated 
 } from '../store/slices/socketSlice';
+import { incrementUnreadCount } from '../store/slices/chatSlice';
 import { api } from '../api';
 import { store } from '../store';
 
@@ -34,22 +35,28 @@ export const handleMessageReceived = (data) => {
   // data is the new message object: { id, chatId, senderId, content, ... }
   const state = store.getState();
   const activeChatId = state.chat.activeChatId;
-  const currentUserId = state.auth.user?.id;
+  const currentUserId = state.auth.user?.userId;
 
   // Invalidate RTK Query cache to trigger refetching
   store.dispatch(
     api.util.invalidateTags([
       { type: 'Messages', id: data.chatId },
-      'Chats'
+      'Chats',
+      'Notifications'
     ])
   );
 
-  // If the received message is in the currently active chat and not sent by the active user, mark it as read
-  if (activeChatId === data.chatId && data.senderId !== currentUserId) {
-    // Dispatch REST API call to mark as read
-    store.dispatch(
-      api.endpoints.markAsRead.initiate(data.id)
-    );
+  // If the received message is in the currently active chat, mark it as read immediately
+  if (activeChatId === data.chatId) {
+    if (data.senderId !== currentUserId) {
+      // Dispatch REST API call to mark as read
+      store.dispatch(
+        api.endpoints.markAsRead.initiate(data.id)
+      );
+    }
+  } else {
+    // Increment local unread count
+    store.dispatch(incrementUnreadCount(data.chatId));
   }
 };
 
@@ -67,6 +74,29 @@ export const handleMessageDeleted = (data) => {
   store.dispatch(
     api.util.invalidateTags([
       { type: 'Messages', id: data.chatId }
+    ])
+  );
+};
+
+export const handleFriendRequestReceived = (data) => {
+  store.dispatch(
+    api.util.invalidateTags(['Friends'])
+  );
+};
+
+export const handleFriendRequestAccepted = (data) => {
+  store.dispatch(
+    api.util.invalidateTags(['Friends', 'Chats'])
+  );
+};
+
+export const handleMessageRead = (data) => {
+  // data: { messageId, chatId, userId, readCount }
+  store.dispatch(
+    api.util.invalidateTags([
+      { type: 'Messages', id: data.chatId },
+      'Chats',
+      'Notifications'
     ])
   );
 };

@@ -11,7 +11,8 @@ import {
   handleMessageDeleted,
   handleFriendRequestReceived,
   handleFriendRequestAccepted,
-  handleMessageRead
+  handleMessageRead,
+  handleMessageDelivered
 } from './socketHandlers';
 
 const SOCKET_URL = window.location.origin.includes('localhost')
@@ -86,6 +87,10 @@ export const connectSocket = (accessToken) => {
 
   socket.on('message_read', (data) => {
     handleMessageRead(data);
+  });
+
+  socket.on('message_delivered', (data) => {
+    handleMessageDelivered(data);
   });
 
   socket.on('friend_request_received', (data) => {

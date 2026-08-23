@@ -74,6 +74,27 @@ export const userApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Profile'],
     }),
+    blockUser: builder.mutation({
+      query: (targetUserId) => ({
+        url: `/api/v1/users/block/${targetUserId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Friends'],
+    }),
+    unblockUser: builder.mutation({
+      query: (targetUserId) => ({
+        url: `/api/v1/users/unblock/${targetUserId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Friends'],
+    }),
+    getBlockedUsers: builder.query({
+      query: () => ({
+        url: '/api/v1/users/blocked',
+        method: 'GET',
+      }),
+      providesTags: ['Friends'],
+    }),
   }),
 });
 
@@ -88,5 +109,8 @@ export const {
   useAcceptFriendRequestMutation,
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+  useGetBlockedUsersQuery,
 } = userApi;
 export default userApi;

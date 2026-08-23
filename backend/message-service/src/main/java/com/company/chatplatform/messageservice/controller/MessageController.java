@@ -32,11 +32,13 @@ public class MessageController {
 
     @GetMapping("/chat/{chatId}")
     public ResponseEntity<ApiResponse<Page<MessageDto>>> getChatMessages(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
             @PathVariable("chatId") String chatId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "30") int size
     ) {
-        Page<MessageDto> messages = messageService.getChatMessages(chatId, page, size);
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        Page<MessageDto> messages = messageService.getChatMessages(userId, chatId, page, size);
         return ResponseEntity.ok(ApiResponse.success(messages));
     }
 
@@ -99,6 +101,24 @@ public class MessageController {
         String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
         messageService.markChatAsRead(userId, chatId);
         return ResponseEntity.ok(ApiResponse.success(null, "Chat marked as read"));
+    }
+
+    @GetMapping("/chat/{chatId}/pinned")
+    public ResponseEntity<ApiResponse<java.util.List<MessageDto>>> getPinnedMessages(
+            @PathVariable("chatId") String chatId
+    ) {
+        java.util.List<MessageDto> pinned = messageService.getPinnedMessages(chatId);
+        return ResponseEntity.ok(ApiResponse.success(pinned));
+    }
+
+    @PostMapping("/chats/{chatId}/deliver")
+    public ResponseEntity<ApiResponse<Void>> markChatAsDelivered(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("chatId") String chatId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        messageService.markChatAsDelivered(userId, chatId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Chat marked as delivered"));
     }
 
     @PutMapping("/{messageId}/pin")

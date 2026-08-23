@@ -136,11 +136,26 @@ export const Sidebar = () => {
   const themeMode = useSelector((state) => state.theme.mode);
   const currentUser = useSelector((state) => state.auth.user);
   const typingUsers = useSelector((state) => state.socket.typingUsers);
+  const state = useSelector((state) => state);
 
   const [globalSearchActive, setGlobalSearchActive] = useState(false);
+  const [activeTab, setActiveTab] = useState('chats');
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [groupTitle, setGroupTitle] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationsRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // RTK Query hooks
   const { data: profileRes } = useGetProfileQuery();
@@ -195,20 +210,72 @@ export const Sidebar = () => {
   const chats = chatsRes?.data || [];
   const friends = friendsRes?.data || [];
   const friendRequests = requestsRes?.data || [];
+  const totalUnreadCount = chats.filter(c => !c.archived).reduce((sum, chat) => sum + (unreadCounts[chat.id] || 0), 0);
+
+  const getDirectChatDetails = (chat) => {
+    const otherMember = chat.members?.find((m) => m.userId !== currentUser?.userId);
+    if (!otherMember) return { title: 'Direct Chat', username: '' };
+    
+    // 1. Check cached RTK Query state for getUserProfile
+    const profileKey = `getUserProfile("${otherMember.userId}")`;
+    const cachedProfile = state.api?.queries?.[profileKey]?.data?.data;
+    if (cachedProfile) {
+      return {
+        title: cachedProfile.displayName || cachedProfile.username || otherMember.userId,
+        username: cachedProfile.username || ''
+      };
+    }
+
+    // 2. Check friends list fallback
+    const friendInfo = friends.find(
+      (f) =>
+        f.friendProfile?.userId === otherMember.userId ||
+        f.requesterId === otherMember.userId ||
+        f.addresseeId === otherMember.userId
+    );
+    if (friendInfo?.friendProfile) {
+      return {
+        title: friendInfo.friendProfile.displayName || friendInfo.friendProfile.username,
+        username: friendInfo.friendProfile.username || ''
+      };
+    }
+
+    return { title: otherMember.userId, username: '' };
+  };
+
+  function getDirectChatName(chat) {
+    return getDirectChatDetails(chat).title;
+  }
 
   // Filter and sort chats
   const filteredChats = chats
     .filter((chat) => {
-      // Filter out archived status
+      // Archive filter based on activeTab
       const isArchived = chat.archived || false;
-      if (archivedViewActive) return isArchived;
+      if (activeTab === 'archived') return isArchived;
       return !isArchived;
     })
     .filter((chat) => {
-      // Local title filter
+      // Unread filter based on activeTab
+      if (activeTab === 'unread') {
+        const chatUnreadCount = unreadCounts[chat.id] || 0;
+        return chatUnreadCount > 0;
+      }
+      return true;
+    })
+    .filter((chat) => {
+      // Local title and username filter
       if (!localSearchQuery.trim()) return true;
-      const title = chat.type === 'GROUP' ? chat.title : getDirectChatName(chat);
-      return title.toLowerCase().includes(localSearchQuery.toLowerCase());
+      const query = localSearchQuery.toLowerCase();
+      if (chat.type === 'GROUP') {
+        return chat.title?.toLowerCase().includes(query);
+      } else {
+        const details = getDirectChatDetails(chat);
+        return (
+          details.title.toLowerCase().includes(query) ||
+          details.username.toLowerCase().includes(query)
+        );
+      }
     })
     .sort((a, b) => {
       // Sort by pinned first
@@ -218,19 +285,6 @@ export const Sidebar = () => {
       // Then by updatedAt
       return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
-
-  function getDirectChatName(chat) {
-    if (chat.type === 'GROUP') return chat.title;
-    const otherMember = chat.members?.find((m) => m.userId !== currentUser?.userId);
-    if (!otherMember) return 'Direct Chat';
-    
-    // Look up this otherMember.userId in friends list to find their profile details!
-    const friendInfo = friends.find(f => f.friendProfile?.userId === otherMember.userId || f.requesterId === otherMember.userId || f.addresseeId === otherMember.userId);
-    if (friendInfo?.friendProfile) {
-      return friendInfo.friendProfile.displayName || friendInfo.friendProfile.username;
-    }
-    return otherMember.userId; // fallback
-  }
 
   const handleChatSelect = (chatId) => {
     dispatch(setActiveChatId(chatId));
@@ -265,6 +319,31 @@ export const Sidebar = () => {
       setGlobalSearchQuery('');
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleStartAuraAssistant = async () => {
+    if (createChatLoading) return;
+    const assistantId = "018f98d0-0000-0000-0000-000000000000";
+    const existingChat = chats.find(
+      (c) => c.type === 'DIRECT' && (
+        c.members?.some((m) => m.userId?.toLowerCase() === assistantId) ||
+        getDirectChatDetails(c).username?.toLowerCase() === 'aura-assistant'
+      )
+    );
+
+    if (existingChat) {
+      dispatch(setActiveChatId(existingChat.id));
+      return;
+    }
+
+    try {
+      const res = await createDirectChat(assistantId).unwrap();
+      if (res?.data?.id) {
+        dispatch(setActiveChatId(res.data.id));
+      }
+    } catch (err) {
+      console.error('Failed to create direct chat with Aura Assistant:', err);
     }
   };
 
@@ -313,24 +392,24 @@ export const Sidebar = () => {
         </div>
 
         <div className="flex items-center gap-1">
-          <div className="relative">
+          <div className="relative" ref={notificationsRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer relative"
               title="Notifications"
             >
               <Bell size={18} />
-              {notificationsRes?.data?.filter(n => !n.read).length > 0 && (
+              {notificationsRes?.data?.filter(n => !n.read && (!n.chatId || !mutes[n.chatId])).length > 0 && (
                 <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white" />
               )}
             </button>
             {showNotifications && (
               <div className="absolute -right-48 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-2 max-h-80 overflow-y-auto">
                 <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200 p-2 border-b border-slate-100 dark:border-slate-700">Notifications</h4>
-                {notificationsRes?.data?.length === 0 ? (
+                {notificationsRes?.data?.filter(n => !n.chatId || !mutes[n.chatId]).length === 0 ? (
                   <p className="text-[10px] text-slate-400 p-4 text-center">No notifications yet</p>
                 ) : (
-                  notificationsRes?.data?.map((n) => (
+                  notificationsRes?.data?.filter(n => !n.chatId || !mutes[n.chatId]).map((n) => (
                     <div key={n.id} className={`p-2 border-b border-slate-50 dark:border-slate-800/60 flex items-start justify-between gap-1.5 ${!n.read ? 'bg-slate-50 dark:bg-slate-900/40' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100">{n.title}</p>
@@ -338,7 +417,12 @@ export const Sidebar = () => {
                       </div>
                       {!n.read && (
                         <button 
-                          onClick={() => markNotificationAsRead(n.id)}
+                          onClick={() => {
+                            markNotificationAsRead(n.id);
+                            if (n.chatId) {
+                              markChatAsRead(n.chatId);
+                            }
+                          }}
                           className="text-[9px] text-aura-teal-600 hover:underline flex-shrink-0 cursor-pointer"
                         >
                           Mark read
@@ -352,21 +436,22 @@ export const Sidebar = () => {
           </div>
 
           <button 
+            onClick={handleStartAuraAssistant}
+            disabled={createChatLoading}
+            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer relative group flex items-center justify-center disabled:opacity-50"
+            title="Aura Assistant (AI)"
+          >
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-400 to-purple-500 animate-spin-slow opacity-80 group-hover:opacity-100 transition-all flex items-center justify-center shadow-sm">
+              <div className="w-2.5 h-2.5 rounded-full bg-white dark:bg-slate-900 transition-colors" />
+            </div>
+          </button>
+
+          <button 
             onClick={() => dispatch(toggleTheme())}
             className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             title="Toggle theme"
           >
             {themeMode === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-          
-          <button 
-            onClick={() => dispatch(setArchivedViewActive(!archivedViewActive))}
-            className={`p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ${
-              archivedViewActive ? 'text-aura-teal-600 bg-aura-teal-100/30' : ''
-            }`}
-            title="Archived Chats"
-          >
-            <Archive size={18} />
           </button>
 
           <button 
@@ -407,27 +492,42 @@ export const Sidebar = () => {
       )}
 
       {/* Search box selection tabs */}
-      <div className="px-4 py-2 flex gap-2">
-        <button
-          onClick={() => setGlobalSearchActive(false)}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-            !globalSearchActive
-              ? 'bg-aura-teal-500 text-white'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-          }`}
-        >
-          Chats
-        </button>
-        <button
-          onClick={() => setGlobalSearchActive(true)}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-            globalSearchActive
-              ? 'bg-aura-teal-500 text-white'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-          }`}
-        >
-          Find Users
-        </button>
+      <div className="px-4 py-2 grid grid-cols-4 gap-1.5">
+        {[
+          { id: 'chats', label: 'Chats' },
+          { id: 'unread', label: 'Unread' },
+          { id: 'archived', label: 'Archived' },
+          { id: 'find_users', label: 'Find' }
+        ].map((tab) => {
+          const isActive = (tab.id === 'find_users' && globalSearchActive) || (tab.id !== 'find_users' && !globalSearchActive && activeTab === tab.id);
+          const showBadge = tab.id === 'unread' && totalUnreadCount > 0;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === 'find_users') {
+                  setGlobalSearchActive(true);
+                } else {
+                  setGlobalSearchActive(false);
+                  dispatch(setArchivedViewActive(tab.id === 'archived'));
+                }
+              }}
+              className={`py-1.5 text-[10px] font-bold rounded-lg transition-all text-center flex items-center justify-center gap-1 cursor-pointer ${
+                isActive
+                  ? 'bg-aura-teal-500 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <span>{tab.label}</span>
+              {showBadge && (
+                <span className="bg-red-500 text-white text-[8px] px-1 rounded-full font-extrabold">
+                  {totalUnreadCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Search Bar */}

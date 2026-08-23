@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.company.chatplatform.chatservice.dto.ChatMemberDto;
 import java.util.List;
 
 @RestController
@@ -27,5 +28,30 @@ public class InternalChatController {
         }
         List<String> memberIds = chatService.getChatMemberIds(chatId);
         return ResponseEntity.ok(memberIds);
+    }
+
+    @GetMapping("/{chatId}/active-member-ids")
+    public ResponseEntity<?> getActiveMemberIds(
+            @RequestHeader(value = "X-Internal-Token", required = false) String internalToken,
+            @PathVariable("chatId") String chatId
+    ) {
+        if (internalToken == null || !internalToken.equals("secret-internal-service-token")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized internal request");
+        }
+        List<String> activeMemberIds = chatService.getActiveMemberIds(chatId);
+        return ResponseEntity.ok(activeMemberIds);
+    }
+
+    @GetMapping("/{chatId}/members/{userId}")
+    public ResponseEntity<?> getChatMember(
+            @RequestHeader(value = "X-Internal-Token", required = false) String internalToken,
+            @PathVariable("chatId") String chatId,
+            @PathVariable("userId") String userId
+    ) {
+        if (internalToken == null || !internalToken.equals("secret-internal-service-token")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized internal request");
+        }
+        ChatMemberDto member = chatService.getChatMember(chatId, userId);
+        return ResponseEntity.ok(member);
     }
 }

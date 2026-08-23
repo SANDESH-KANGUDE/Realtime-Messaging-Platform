@@ -34,6 +34,7 @@ public class MessageDocument {
 
     private List<ReactionDocument> reactions = new ArrayList<>();
     private List<ReadReceiptDocument> readReceipts = new ArrayList<>();
+    private List<DeliveryReceiptDocument> deliveryReceipts = new ArrayList<>();
 
     @Indexed
     private Instant createdAt = Instant.now();
@@ -123,6 +124,14 @@ public class MessageDocument {
 
     public void setReadReceipts(List<ReadReceiptDocument> readReceipts) {
         this.readReceipts = readReceipts;
+    }
+
+    public List<DeliveryReceiptDocument> getDeliveryReceipts() {
+        return deliveryReceipts;
+    }
+
+    public void setDeliveryReceipts(List<DeliveryReceiptDocument> deliveryReceipts) {
+        this.deliveryReceipts = deliveryReceipts;
     }
 
     public Instant getCreatedAt() {

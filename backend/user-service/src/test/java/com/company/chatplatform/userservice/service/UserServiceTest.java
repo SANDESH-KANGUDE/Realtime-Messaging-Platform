@@ -5,6 +5,7 @@ import com.company.chatplatform.userservice.domain.repository.OutboxEventReposit
 import com.company.chatplatform.userservice.domain.repository.UserProfileRepository;
 import com.company.chatplatform.userservice.domain.repository.UserPreferenceRepository;
 import com.company.chatplatform.userservice.dto.UserProfileDto;
+import com.company.chatplatform.userservice.domain.repository.BlockedUserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ class UserServiceTest {
     private UserProfileRepository userProfileRepository;
     private UserPreferenceRepository userPreferenceRepository;
     private OutboxEventRepository outboxEventRepository;
+    private BlockedUserRepository blockedUserRepository;
     private ObjectMapper objectMapper;
     private UserService userService;
 
@@ -28,12 +30,14 @@ class UserServiceTest {
         userProfileRepository = Mockito.mock(UserProfileRepository.class);
         userPreferenceRepository = Mockito.mock(UserPreferenceRepository.class);
         outboxEventRepository = Mockito.mock(OutboxEventRepository.class);
+        blockedUserRepository = Mockito.mock(BlockedUserRepository.class);
         objectMapper = new ObjectMapper();
 
         userService = new UserService(
                 userProfileRepository,
                 userPreferenceRepository,
                 outboxEventRepository,
+                blockedUserRepository,
                 objectMapper
         );
     }

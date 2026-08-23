@@ -33,7 +33,8 @@ public class NotificationKafkaListener {
 
     @KafkaListener(topics = {
             EventTopics.MESSAGE_SENT,
-            EventTopics.FRIEND_REQUEST_SENT
+            EventTopics.FRIEND_REQUEST_SENT,
+            "message.read.v1"
     }, groupId = "notification-service-group")
     public void onEvent(
             String message,
@@ -48,13 +49,36 @@ public class NotificationKafkaListener {
                 if (addresseeId != null) {
                     notificationService.createNotification(addresseeId, "New Friend Request", "You received a new friend request!", "FRIEND_REQUEST");
                 }
+            } else if ("message.read.v1".equals(topic)) {
+                String chatId = (String) map.get("chatId");
+                String userId = (String) map.get("userId");
+                if (chatId != null && userId != null) {
+                    notificationService.deleteChatNotifications(userId, chatId);
+                    log.info("Cleared MESSAGE notifications for recipient {} in chat {}", userId, chatId);
+                }
             } else if (EventTopics.MESSAGE_SENT.equals(topic)) {
                 String chatId = (String) map.get("chatId");
                 String senderId = (String) map.get("senderId");
                 String content = (String) map.get("content");
                 if (chatId != null) {
                     try {
-                        String url = "http://localhost:8083/internal/v1/chats/" + chatId + "/member-ids";
+                        String senderName = "Someone";
+                        if (senderId != null) {
+                            try {
+                                String userUrl = "http://localhost:8082/api/v1/users/" + senderId;
+                                Map<?, ?> userRes = restTemplate.getForObject(userUrl, Map.class);
+                                if (userRes != null && userRes.get("data") != null) {
+                                    Map<?, ?> dataMap = (Map<?, ?>) userRes.get("data");
+                                    String dispName = (String) dataMap.get("displayName");
+                                    String uName = (String) dataMap.get("username");
+                                    senderName = (dispName != null && !dispName.isBlank()) ? dispName : uName;
+                                }
+                            } catch (Exception ue) {
+                                log.error("Failed to fetch sender profile from user-service", ue);
+                            }
+                        }
+
+                        String url = "http://localhost:8083/internal/v1/chats/" + chatId + "/active-member-ids";
                         HttpHeaders headers = new HttpHeaders();
                         headers.set("X-Internal-Token", "secret-internal-service-token");
                         HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -65,15 +89,16 @@ public class NotificationKafkaListener {
                                 if (senderId == null || !memberId.equals(senderId)) {
                                     notificationService.createNotification(
                                             memberId,
-                                            "New Message",
-                                            content != null ? content : "You received a new message",
-                                            "MESSAGE"
+                                            senderName,
+                                            content != null ? content : "sent a message",
+                                            "MESSAGE",
+                                            chatId
                                     );
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        log.error("Failed to retrieve chat members for message notification", e);
+                        log.error("Failed to retrieve active chat members for message notification", e);
                     }
                 }
             }

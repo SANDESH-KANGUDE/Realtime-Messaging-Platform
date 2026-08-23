@@ -6,9 +6,11 @@ import com.company.chatplatform.common.kafka.topics.EventTopics;
 import com.company.chatplatform.userservice.domain.entity.OutboxEventEntity;
 import com.company.chatplatform.userservice.domain.entity.UserProfile;
 import com.company.chatplatform.userservice.domain.entity.UserPreference;
+import com.company.chatplatform.userservice.domain.entity.BlockedUser;
 import com.company.chatplatform.userservice.domain.repository.OutboxEventRepository;
 import com.company.chatplatform.userservice.domain.repository.UserProfileRepository;
 import com.company.chatplatform.userservice.domain.repository.UserPreferenceRepository;
+import com.company.chatplatform.userservice.domain.repository.BlockedUserRepository;
 import com.company.chatplatform.userservice.dto.UpdateProfileRequest;
 import com.company.chatplatform.userservice.dto.UserProfileDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,17 +27,20 @@ public class UserService {
     private final UserProfileRepository userProfileRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final OutboxEventRepository outboxEventRepository;
+    private final BlockedUserRepository blockedUserRepository;
     private final ObjectMapper objectMapper;
 
     public UserService(
             UserProfileRepository userProfileRepository,
             UserPreferenceRepository userPreferenceRepository,
             OutboxEventRepository outboxEventRepository,
+            BlockedUserRepository blockedUserRepository,
             ObjectMapper objectMapper
     ) {
         this.userProfileRepository = userProfileRepository;
         this.userPreferenceRepository = userPreferenceRepository;
         this.outboxEventRepository = outboxEventRepository;
+        this.blockedUserRepository = blockedUserRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -146,5 +151,31 @@ public class UserService {
                 profile.getStatusMessage(),
                 profile.getCreatedAt().toString()
         );
+    }
+
+    @Transactional
+    public void blockUser(String blockerId, String blockedId) {
+        if (blockerId.equals(blockedId)) {
+            throw new IllegalArgumentException("Cannot block yourself");
+        }
+        if (!blockedUserRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId)) {
+            BlockedUser block = new BlockedUser(UUIDv7Utils.generateString(), blockerId, blockedId);
+            blockedUserRepository.save(block);
+        }
+    }
+
+    @Transactional
+    public void unblockUser(String blockerId, String blockedId) {
+        blockedUserRepository.deleteByBlockerIdAndBlockedId(blockerId, blockedId);
+    }
+
+    public List<String> getBlockedUserIds(String blockerId) {
+        return blockedUserRepository.findByBlockerId(blockerId).stream()
+                .map(BlockedUser::getBlockedId)
+                .toList();
+    }
+
+    public boolean isBlocked(String blockerId, String blockedId) {
+        return blockedUserRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId);
     }
 }

@@ -1,4 +1,6 @@
+F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\controller\InternalMessageController.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\controller\MessageController.java
+F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\domain\document\DeliveryReceiptDocument.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\domain\document\MessageDocument.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\domain\document\OutboxMessageDocument.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\domain\document\PollVote.java
@@ -7,6 +9,7 @@ F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\comp
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\domain\repository\MessageRepository.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\domain\repository\OutboxMessageRepository.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\AddReactionRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\DeliveryReceiptDto.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\EditMessageRequest.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\MessageDto.java
 F:\CDAC\realtime_chat_antigravity\backend\message-service\src\main\java\com\company\chatplatform\messageservice\dto\PollVoteDto.java

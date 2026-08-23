@@ -65,8 +65,18 @@ public class ChatController {
             @Valid @RequestBody AddMemberRequest request
     ) {
         String currentUserId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
-        ChatMemberDto member = chatService.addMember(chatId, currentUserId, request);
+        ChatMemberDto member = chatService.addMember(currentUserId, chatId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(member, "Member added"));
+    }
+
+    @DeleteMapping("/{chatId}")
+    public ResponseEntity<ApiResponse<Void>> deleteChat(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("chatId") String chatId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        chatService.deleteGroupChat(userId, chatId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Group deleted successfully"));
     }
 
     @DeleteMapping("/{chatId}/members/{userId}")

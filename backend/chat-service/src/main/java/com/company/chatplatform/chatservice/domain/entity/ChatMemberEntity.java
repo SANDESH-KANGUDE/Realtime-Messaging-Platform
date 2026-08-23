@@ -32,6 +32,12 @@ public class ChatMemberEntity {
     @Column(name = "theme", length = 50)
     private String theme;
 
+    @Column(name = "left_at")
+    private Instant leftAt;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     public ChatMemberEntity() {}
 
     public ChatMemberEntity(String id, String chatId, String userId, String role) {
@@ -41,6 +47,7 @@ public class ChatMemberEntity {
         this.role = role != null ? role : "MEMBER";
         this.pinned = false;
         this.archived = false;
+        this.active = true;
         this.joinedAt = Instant.now();
     }
 
@@ -90,5 +97,21 @@ public class ChatMemberEntity {
 
     public void setTheme(String theme) {
         this.theme = theme;
+    }
+
+    public Instant getLeftAt() {
+        return leftAt;
+    }
+
+    public void setLeftAt(Instant leftAt) {
+        this.leftAt = leftAt;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

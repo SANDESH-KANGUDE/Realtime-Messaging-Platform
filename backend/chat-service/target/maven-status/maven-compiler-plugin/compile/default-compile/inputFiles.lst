@@ -12,5 +12,6 @@ F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\ChatMemberDto.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\CreateDirectChatRequest.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\dto\CreateGroupChatRequest.java
+F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\listener\ChatKafkaListener.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\service\ChatService.java
 F:\CDAC\realtime_chat_antigravity\backend\chat-service\src\main\java\com\company\chatplatform\chatservice\service\OutboxPublisherScheduler.java

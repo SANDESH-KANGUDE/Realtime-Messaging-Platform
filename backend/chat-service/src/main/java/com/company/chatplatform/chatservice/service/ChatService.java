@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.Instant;
 
 @Service
 public class ChatService {
@@ -106,17 +107,29 @@ public class ChatService {
         ChatEntity chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found", "CHAT_NOT_FOUND"));
 
-        if (!chatMemberRepository.existsByChatIdAndUserId(chatId, currentUserId)) {
-            throw new ResourceNotFoundException("Not authorized to add members to this chat", "UNAUTHORIZED");
+        ChatMemberEntity requester = chatMemberRepository.findByChatIdAndUserId(chatId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Not authorized to add members to this chat", "UNAUTHORIZED"));
+
+        if (!"OWNER".equals(requester.getRole()) && !"ADMIN".equals(requester.getRole())) {
+            throw new com.company.chatplatform.common.core.exception.ForbiddenException("Only owners or admins can add members", "FORBIDDEN");
         }
 
-        if (chatMemberRepository.existsByChatIdAndUserId(chatId, request.getUserId())) {
-            throw new ConflictException("User is already a member of this chat", "MEMBER_ALREADY_EXISTS");
+        Optional<ChatMemberEntity> existing = chatMemberRepository.findByChatIdAndUserId(chatId, request.getUserId());
+        ChatMemberEntity member;
+        if (existing.isPresent()) {
+            member = existing.get();
+            if (member.isActive()) {
+                throw new ConflictException("User is already a member of this chat", "MEMBER_ALREADY_EXISTS");
+            }
+            member.setActive(true);
+            member.setLeftAt(null);
+            member.setRole(request.getRole() != null ? request.getRole() : "MEMBER");
+            chatMemberRepository.save(member);
+        } else {
+            String memberId = UUIDv7Utils.generateString();
+            member = new ChatMemberEntity(memberId, chatId, request.getUserId(), request.getRole());
+            chatMemberRepository.save(member);
         }
-
-        String memberId = UUIDv7Utils.generateString();
-        ChatMemberEntity member = new ChatMemberEntity(memberId, chatId, request.getUserId(), request.getRole());
-        chatMemberRepository.save(member);
 
         saveOutboxEvent(EventTopics.GROUP_UPDATED, chatId, Map.of("chatId", chatId, "action", "MEMBER_ADDED", "userId", request.getUserId()));
 
@@ -125,11 +138,22 @@ public class ChatService {
 
     @Transactional
     public void removeMember(String currentUserId, String chatId, String targetUserId) {
-        if (!chatMemberRepository.existsByChatIdAndUserId(chatId, currentUserId)) {
-            throw new ResourceNotFoundException("Not authorized", "UNAUTHORIZED");
+        ChatMemberEntity requester = chatMemberRepository.findByChatIdAndUserId(chatId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Not authorized", "UNAUTHORIZED"));
+
+        if (!currentUserId.equals(targetUserId)) {
+            if (!"OWNER".equals(requester.getRole()) && !"ADMIN".equals(requester.getRole())) {
+                throw new com.company.chatplatform.common.core.exception.ForbiddenException("Only owners or admins can kick members", "FORBIDDEN");
+            }
         }
 
-        chatMemberRepository.deleteByChatIdAndUserId(chatId, targetUserId);
+        ChatMemberEntity targetMember = chatMemberRepository.findByChatIdAndUserId(chatId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Target member not found", "MEMBER_NOT_FOUND"));
+
+        targetMember.setActive(false);
+        targetMember.setLeftAt(Instant.now());
+        chatMemberRepository.save(targetMember);
+
         saveOutboxEvent(EventTopics.GROUP_UPDATED, chatId, Map.of("chatId", chatId, "action", "MEMBER_REMOVED", "userId", targetUserId));
     }
 
@@ -180,7 +204,18 @@ public class ChatService {
     private ChatDto toDto(ChatEntity chat, String currentUserId) {
         List<ChatMemberDto> memberDtos = chatMemberRepository.findByChatId(chat.getId())
                 .stream()
-                .map(m -> new ChatMemberDto(m.getId(), m.getChatId(), m.getUserId(), m.getRole(), m.isPinned(), m.isArchived(), m.getTheme(), m.getJoinedAt().toString()))
+                .map(m -> new ChatMemberDto(
+                        m.getId(),
+                        m.getChatId(),
+                        m.getUserId(),
+                        m.getRole(),
+                        m.isPinned(),
+                        m.isArchived(),
+                        m.getTheme(),
+                        m.getLeftAt() != null ? m.getLeftAt().toString() : null,
+                        m.isActive(),
+                        m.getJoinedAt().toString()
+                ))
                 .toList();
 
         boolean pinned = false;
@@ -232,6 +267,13 @@ public class ChatService {
                 .toList();
     }
 
+    public List<String> getActiveMemberIds(String chatId) {
+        return chatMemberRepository.findByChatId(chatId).stream()
+                .filter(m -> !m.isArchived())
+                .map(ChatMemberEntity::getUserId)
+                .toList();
+    }
+
     @Transactional
     public void archiveChat(String userId, String chatId, boolean archived) {
         ChatMemberEntity member = chatMemberRepository.findByChatIdAndUserId(chatId, userId)
@@ -246,5 +288,40 @@ public class ChatService {
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found", "MEMBER_NOT_FOUND"));
         member.setTheme(theme);
         chatMemberRepository.save(member);
+    }
+
+    @Transactional
+    public void deleteGroupChat(String userId, String chatId) {
+        ChatEntity chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chat not found", "CHAT_NOT_FOUND"));
+
+        if (!"GROUP".equals(chat.getType())) {
+            throw new ConflictException("Only group chats can be deleted", "NOT_A_GROUP");
+        }
+
+        if (!chat.getCreatedBy().equals(userId)) {
+            throw new com.company.chatplatform.common.core.exception.ForbiddenException("Only the creator of the group can delete it", "FORBIDDEN");
+        }
+
+        chatRepository.delete(chat);
+        chatMemberRepository.findByChatId(chatId).forEach(chatMemberRepository::delete);
+        saveOutboxEvent(EventTopics.GROUP_UPDATED, chatId, Map.of("chatId", chatId, "action", "DELETED"));
+    }
+
+    public ChatMemberDto getChatMember(String chatId, String userId) {
+        ChatMemberEntity m = chatMemberRepository.findByChatIdAndUserId(chatId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found", "MEMBER_NOT_FOUND"));
+        return new ChatMemberDto(
+                m.getId(),
+                m.getChatId(),
+                m.getUserId(),
+                m.getRole(),
+                m.isPinned(),
+                m.isArchived(),
+                m.getTheme(),
+                m.getLeftAt() != null ? m.getLeftAt().toString() : null,
+                m.isActive(),
+                m.getJoinedAt().toString()
+        );
     }
 }

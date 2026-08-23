@@ -21,15 +21,26 @@ public class NotificationService {
 
     @Transactional
     public NotificationDto createNotification(String recipientId, String title, String body, String type) {
+        return createNotification(recipientId, title, body, type, null);
+    }
+
+    @Transactional
+    public NotificationDto createNotification(String recipientId, String title, String body, String type, String chatId) {
         NotificationEntity entity = new NotificationEntity(
                 UUIDv7Utils.generateString(),
                 recipientId,
                 title,
                 body,
-                type
+                type,
+                chatId
         );
         notificationRepository.save(entity);
         return toDto(entity);
+    }
+
+    @Transactional
+    public void deleteChatNotifications(String recipientId, String chatId) {
+        notificationRepository.deleteByRecipientIdAndChatId(recipientId, chatId);
     }
 
     @Transactional
@@ -73,6 +84,7 @@ public class NotificationService {
                 entity.getBody(),
                 entity.getType(),
                 entity.isRead(),
+                entity.getChatId(),
                 entity.getCreatedAt().toString()
         );
     }

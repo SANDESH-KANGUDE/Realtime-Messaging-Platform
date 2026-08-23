@@ -23,6 +23,9 @@ public class NotificationEntity {
     @Column(name = "type", nullable = false, length = 50)
     private String type = "SYSTEM";
 
+    @Column(name = "chat_id", length = 36)
+    private String chatId;
+
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
 
@@ -32,11 +35,16 @@ public class NotificationEntity {
     public NotificationEntity() {}
 
     public NotificationEntity(String id, String recipientId, String title, String body, String type) {
+        this(id, recipientId, title, body, type, null);
+    }
+
+    public NotificationEntity(String id, String recipientId, String title, String body, String type, String chatId) {
         this.id = id;
         this.recipientId = recipientId;
         this.title = title;
         this.body = body;
         this.type = type != null ? type : "SYSTEM";
+        this.chatId = chatId;
         this.read = false;
         this.createdAt = Instant.now();
     }
@@ -71,5 +79,13 @@ public class NotificationEntity {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(String chatId) {
+        this.chatId = chatId;
     }
 }

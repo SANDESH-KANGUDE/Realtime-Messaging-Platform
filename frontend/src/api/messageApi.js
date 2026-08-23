@@ -45,16 +45,26 @@ export const messageApi = api.injectEndpoints({
       }),
     }),
     pinMessage: builder.mutation({
-      query: (messageId) => ({
+      query: ({ messageId }) => ({
         url: `/api/v1/messages/${messageId}/pin`,
         method: 'PUT',
       }),
+      invalidatesTags: (result, error, { chatId }) => [
+        { type: 'Messages', id: chatId },
+        { type: 'Messages', id: `pinned-${chatId}` },
+        'Chats'
+      ],
     }),
     unpinMessage: builder.mutation({
-      query: (messageId) => ({
+      query: ({ messageId }) => ({
         url: `/api/v1/messages/${messageId}/unpin`,
         method: 'PUT',
       }),
+      invalidatesTags: (result, error, { chatId }) => [
+        { type: 'Messages', id: chatId },
+        { type: 'Messages', id: `pinned-${chatId}` },
+        'Chats'
+      ],
     }),
     votePoll: builder.mutation({
       query: ({ messageId, optionIndex }) => ({
@@ -75,7 +85,21 @@ export const messageApi = api.injectEndpoints({
         url: `/api/v1/messages/chats/${chatId}/read`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, chatId) => [{ type: 'Messages', id: chatId }, 'Chats', 'Notifications'],
+      invalidatesTags: (result, error, chatId) => [{ type: 'Messages', id: chatId }, { type: 'Messages', id: `pinned-${chatId}` }, 'Chats', 'Notifications'],
+    }),
+    getPinnedMessages: builder.query({
+      query: (chatId) => ({
+        url: `/api/v1/messages/chat/${chatId}/pinned`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, chatId) => [{ type: 'Messages', id: `pinned-${chatId}` }],
+    }),
+    markChatAsDelivered: builder.mutation({
+      query: (chatId) => ({
+        url: `/api/v1/messages/chats/${chatId}/deliver`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, chatId) => [{ type: 'Messages', id: chatId }],
     }),
   }),
 });
@@ -93,5 +117,7 @@ export const {
   useVotePollMutation,
   useGetUnreadCountsQuery,
   useMarkChatAsReadMutation,
+  useGetPinnedMessagesQuery,
+  useMarkChatAsDeliveredMutation,
 } = messageApi;
 export default messageApi;

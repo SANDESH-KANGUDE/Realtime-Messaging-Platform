@@ -1,0 +1,26 @@
+server:
+  port: 8089
+
+spring:
+  application:
+    name: ai-service
+
+ai:
+  provider: ${AI_PROVIDER:gemini}
+  model: ${AI_MODEL:gemini-3.6-flash}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:google/gemini-flash-1.5:free}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always

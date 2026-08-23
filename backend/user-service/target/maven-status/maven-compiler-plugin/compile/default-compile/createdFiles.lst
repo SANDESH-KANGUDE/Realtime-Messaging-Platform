@@ -1,4 +1,5 @@
 com\company\chatplatform\userservice\controller\FriendshipController.class
+com\company\chatplatform\userservice\domain\repository\BlockedUserRepository.class
 com\company\chatplatform\userservice\domain\repository\UserProfileRepository.class
 com\company\chatplatform\userservice\service\UserService.class
 com\company\chatplatform\userservice\UserApplication.class
@@ -12,9 +13,11 @@ com\company\chatplatform\userservice\domain\entity\Friendship.class
 com\company\chatplatform\userservice\dto\FriendshipDto.class
 com\company\chatplatform\userservice\domain\repository\OutboxEventRepository.class
 com\company\chatplatform\userservice\dto\UpdateProfileRequest.class
+com\company\chatplatform\userservice\domain\entity\BlockedUser.class
 com\company\chatplatform\userservice\domain\entity\UserPreference.class
 com\company\chatplatform\userservice\domain\entity\UserProfile.class
 com\company\chatplatform\userservice\domain\repository\FriendshipRepository.class
+com\company\chatplatform\userservice\seeder\BotUserSeeder.class
 com\company\chatplatform\userservice\service\UserPreferenceService.class
 com\company\chatplatform\userservice\service\FriendshipService.class
 com\company\chatplatform\userservice\dto\UserPreferenceDto.class

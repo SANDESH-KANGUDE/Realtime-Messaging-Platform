@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<NotificationEntity, String> {
     List<NotificationEntity> findByRecipientIdOrderByCreatedAtDesc(String recipientId);
+    void deleteByRecipientIdAndChatId(String recipientId, String chatId);
 }

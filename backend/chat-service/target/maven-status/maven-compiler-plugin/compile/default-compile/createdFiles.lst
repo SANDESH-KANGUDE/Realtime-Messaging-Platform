@@ -1,3 +1,4 @@
+com\company\chatplatform\chatservice\listener\ChatKafkaListener.class
 com\company\chatplatform\chatservice\dto\AddMemberRequest.class
 com\company\chatplatform\chatservice\dto\CreateDirectChatRequest.class
 com\company\chatplatform\chatservice\domain\entity\OutboxEventEntity.class

@@ -49,4 +49,42 @@ public class UserController {
         List<UserProfileDto> results = userService.searchUsers(query);
         return ResponseEntity.ok(ApiResponse.success(results));
     }
+
+    @PostMapping("/block/{targetUserId}")
+    public ResponseEntity<ApiResponse<Void>> blockUser(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("targetUserId") String targetUserId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        userService.blockUser(userId, targetUserId);
+        return ResponseEntity.ok(ApiResponse.success(null, "User blocked successfully"));
+    }
+
+    @PostMapping("/unblock/{targetUserId}")
+    public ResponseEntity<ApiResponse<Void>> unblockUser(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @PathVariable("targetUserId") String targetUserId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        userService.unblockUser(userId, targetUserId);
+        return ResponseEntity.ok(ApiResponse.success(null, "User unblocked successfully"));
+    }
+
+    @GetMapping("/blocked")
+    public ResponseEntity<ApiResponse<List<String>>> getBlockedUsers(
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId
+    ) {
+        String userId = headerUserId != null ? headerUserId : UserContextHolder.getUserId();
+        List<String> blockedUserIds = userService.getBlockedUserIds(userId);
+        return ResponseEntity.ok(ApiResponse.success(blockedUserIds));
+    }
+
+    @GetMapping("/internal/is-blocked")
+    public ResponseEntity<Boolean> isBlocked(
+            @RequestParam("user1") String user1,
+            @RequestParam("user2") String user2
+    ) {
+        boolean blocked = userService.isBlocked(user1, user2) || userService.isBlocked(user2, user1);
+        return ResponseEntity.ok(blocked);
+    }
 }

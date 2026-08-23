@@ -14,9 +14,9 @@ public interface ChatRepository extends JpaRepository<ChatEntity, String> {
 
     @Query("""
         SELECT c FROM ChatEntity c
-        JOIN ChatMemberEntity m1 ON c.id = m1.chatId
-        JOIN ChatMemberEntity m2 ON c.id = m2.chatId
-        WHERE c.type = 'DIRECT' AND m1.userId = :user1 AND m2.userId = :user2
+        WHERE c.type = 'DIRECT'
+          AND c.id IN (SELECT m1.chatId FROM ChatMemberEntity m1 WHERE m1.userId = :user1)
+          AND c.id IN (SELECT m2.chatId FROM ChatMemberEntity m2 WHERE m2.userId = :user2)
     """)
     Optional<ChatEntity> findDirectChatBetween(@Param("user1") String user1, @Param("user2") String user2);
 

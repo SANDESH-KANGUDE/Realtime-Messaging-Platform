@@ -8,6 +8,7 @@ import com.company.chatplatform.messageservice.domain.document.MessageDocument;
 import com.company.chatplatform.messageservice.domain.document.OutboxMessageDocument;
 import com.company.chatplatform.messageservice.domain.document.ReactionDocument;
 import com.company.chatplatform.messageservice.domain.document.ReadReceiptDocument;
+import com.company.chatplatform.messageservice.domain.document.DeliveryReceiptDocument;
 import com.company.chatplatform.messageservice.domain.repository.MessageRepository;
 import com.company.chatplatform.messageservice.domain.repository.OutboxMessageRepository;
 import com.company.chatplatform.messageservice.dto.*;
@@ -37,7 +38,67 @@ public class MessageService {
         this.objectMapper = objectMapper;
     }
 
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
+    private void checkBlockStatus(String senderId, String chatId) {
+        try {
+            // Check active member status in chat
+            String chatMemberUrl = "http://localhost:8083/internal/v1/chats/" + chatId + "/members/" + senderId;
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("X-Internal-Token", "secret-internal-service-token");
+            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<Map> memberResponse = restTemplate.exchange(
+                    chatMemberUrl,
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    Map.class
+            );
+            Map<?, ?> member = memberResponse.getBody();
+            if (member != null) {
+                Boolean active = (Boolean) member.get("active");
+                if (Boolean.FALSE.equals(active)) {
+                    throw new ForbiddenException("Cannot send message. You are no longer a member of this group.", "NOT_A_MEMBER");
+                }
+            }
+        } catch (ForbiddenException fe) {
+            throw fe;
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MessageService.class).warn("Failed to verify active membership for user {} in chat {}", senderId, chatId, e);
+        }
+
+        try {
+            // 1. Get chat member IDs from chat-service
+            String chatUrl = "http://localhost:8083/internal/v1/chats/" + chatId + "/member-ids";
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("X-Internal-Token", "secret-internal-service-token");
+            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<List> response = restTemplate.exchange(
+                    chatUrl,
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    List.class
+            );
+            List<String> memberIds = response.getBody();
+            if (memberIds != null && memberIds.size() == 2) {
+                // It is a direct chat. Get the other member ID
+                String otherMemberId = memberIds.get(0).equals(senderId) ? memberIds.get(1) : memberIds.get(0);
+                
+                // 2. Check block status in user-service
+                String userUrl = "http://localhost:8082/api/v1/users/internal/is-blocked?user1=" + senderId + "&user2=" + otherMemberId;
+                Boolean isBlocked = restTemplate.getForObject(userUrl, Boolean.class);
+                if (Boolean.TRUE.equals(isBlocked)) {
+                    throw new ForbiddenException("Cannot send message. One of the users is blocked.", "USER_BLOCKED");
+                }
+            }
+        } catch (ForbiddenException fe) {
+            throw fe;
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MessageService.class).warn("Failed to check block status for sender {} in chat {}", senderId, chatId, e);
+        }
+    }
+
     public MessageDto sendMessage(String senderId, SendMessageRequest request) {
+        checkBlockStatus(senderId, request.getChatId());
         String messageId = UUIDv7Utils.generateString();
         MessageDocument doc = new MessageDocument(
                 messageId,
@@ -69,8 +130,37 @@ public class MessageService {
         return toDto(doc);
     }
 
-    public Page<MessageDto> getChatMessages(String chatId, int page, int size) {
+    public Page<MessageDto> getChatMessages(String userId, String chatId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
+        Instant leftAt = null;
+        try {
+            String chatMemberUrl = "http://localhost:8083/internal/v1/chats/" + chatId + "/members/" + userId;
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("X-Internal-Token", "secret-internal-service-token");
+            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<Map> response = restTemplate.exchange(
+                    chatMemberUrl,
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    Map.class
+            );
+            Map<?, ?> member = response.getBody();
+            if (member != null) {
+                Boolean active = (Boolean) member.get("active");
+                String leftAtStr = (String) member.get("leftAt");
+                if (Boolean.FALSE.equals(active) && leftAtStr != null) {
+                    leftAt = Instant.parse(leftAtStr);
+                }
+            }
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MessageService.class).warn("Failed to check chat member status for user {} in chat {}", userId, chatId, e);
+        }
+
+        if (leftAt != null) {
+            return messageRepository.findByChatIdAndCreatedAtLessThanEqualOrderByCreatedAtDesc(chatId, leftAt, pageable)
+                    .map(this::toDto);
+        }
+
         return messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
                 .map(this::toDto);
     }
@@ -168,6 +258,13 @@ public class MessageService {
         List<MessageDocument> unread = messageRepository.findUnreadMessagesForChat(userId, chatId);
         for (MessageDocument doc : unread) {
             doc.getReadReceipts().add(new ReadReceiptDocument(userId));
+            if (doc.getDeliveryReceipts() == null) {
+                doc.setDeliveryReceipts(new ArrayList<>());
+            }
+            boolean delivered = doc.getDeliveryReceipts().stream().anyMatch(d -> d.getUserId().equals(userId));
+            if (!delivered) {
+                doc.getDeliveryReceipts().add(new DeliveryReceiptDocument(userId));
+            }
             messageRepository.save(doc);
             saveOutboxEvent("message.read.v1", doc.getId(), Map.of(
                     "messageId", doc.getId(),
@@ -175,6 +272,26 @@ public class MessageService {
                     "userId", userId,
                     "readCount", doc.getReadReceipts().size()
             ));
+        }
+    }
+
+    @Transactional
+    public void markChatAsDelivered(String userId, String chatId) {
+        List<MessageDocument> undelivered = messageRepository.findUndeliveredMessagesForChat(userId, chatId);
+        for (MessageDocument doc : undelivered) {
+            if (doc.getDeliveryReceipts() == null) {
+                doc.setDeliveryReceipts(new ArrayList<>());
+            }
+            boolean exists = doc.getDeliveryReceipts().stream().anyMatch(d -> d.getUserId().equals(userId));
+            if (!exists) {
+                doc.getDeliveryReceipts().add(new DeliveryReceiptDocument(userId));
+                messageRepository.save(doc);
+                saveOutboxEvent("message.delivered.v1", doc.getId(), Map.of(
+                        "messageId", doc.getId(),
+                        "chatId", chatId,
+                        "userId", userId
+                ));
+            }
         }
     }
 
@@ -222,6 +339,13 @@ public class MessageService {
         return toDto(doc);
     }
 
+    public List<MessageDto> getPinnedMessages(String chatId) {
+        return messageRepository.findByChatIdAndPinnedTrue(chatId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     private MessageDto toDto(MessageDocument doc) {
         List<ReactionDto> reactions = doc.getReactions() != null ? doc.getReactions().stream()
                 .map(r -> new ReactionDto(r.getUserId(), r.getEmoji(), r.getCreatedAt().toString()))
@@ -233,6 +357,10 @@ public class MessageService {
 
         List<ReadReceiptDto> readReceiptDtos = doc.getReadReceipts() != null ? doc.getReadReceipts().stream()
                 .map(r -> new ReadReceiptDto(r.getUserId(), r.getReadAt().toString()))
+                .toList() : new ArrayList<>();
+
+        List<DeliveryReceiptDto> deliveryReceiptDtos = doc.getDeliveryReceipts() != null ? doc.getDeliveryReceipts().stream()
+                .map(d -> new DeliveryReceiptDto(d.getUserId(), d.getDeliveredAt().toString()))
                 .toList() : new ArrayList<>();
 
         int readCount = doc.getReadReceipts() != null ? doc.getReadReceipts().size() : 0;
@@ -253,6 +381,7 @@ public class MessageService {
                 pollVoteDtos,
                 reactions,
                 readReceiptDtos,
+                deliveryReceiptDtos,
                 readCount,
                 doc.getCreatedAt().toString(),
                 doc.getUpdatedAt().toString()
@@ -273,5 +402,42 @@ public class MessageService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize outbox event payload", e);
         }
+    }
+
+    public MessageDto saveInternalMessage(String senderId, SendMessageRequest request) {
+        if (!"018f98d0-0000-0000-0000-000000000000".equals(senderId)) {
+            throw new ForbiddenException("Only the system Aura Assistant can post through this internal endpoint.", "FORBIDDEN");
+        }
+        
+        String messageId = UUIDv7Utils.generateString();
+        MessageDocument doc = new MessageDocument(
+                messageId,
+                request.getChatId(),
+                senderId,
+                request.getContent(),
+                request.getType() != null ? request.getType() : "TEXT",
+                request.getMediaUrl(),
+                request.getReplyToMessageId()
+        );
+
+        messageRepository.save(doc);
+
+        saveOutboxEvent(EventTopics.MESSAGE_SENT, messageId, Map.of(
+                "messageId", messageId,
+                "chatId", request.getChatId(),
+                "senderId", senderId,
+                "content", request.getContent() != null ? request.getContent() : "",
+                "type", doc.getType()
+        ));
+
+        return toDto(doc);
+    }
+
+    public List<MessageDto> getInternalChatMessages(String chatId, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return messageRepository.findByChatIdOrderByCreatedAtDesc(chatId, pageable)
+                .getContent().stream()
+                .map(this::toDto)
+                .toList();
     }
 }

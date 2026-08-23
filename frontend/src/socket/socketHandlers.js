@@ -55,8 +55,12 @@ export const handleMessageReceived = (data) => {
       );
     }
   } else {
-    // Increment local unread count
-    store.dispatch(incrementUnreadCount(data.chatId));
+    const chats = api.endpoints.getChats.select()(state).data?.data || [];
+    const chat = chats.find(c => c.id === data.chatId);
+    if (!chat?.archived) {
+      // Increment local unread count
+      store.dispatch(incrementUnreadCount(data.chatId));
+    }
   }
 };
 
@@ -97,6 +101,15 @@ export const handleMessageRead = (data) => {
       { type: 'Messages', id: data.chatId },
       'Chats',
       'Notifications'
+    ])
+  );
+};
+
+export const handleMessageDelivered = (data) => {
+  // data: { messageId, chatId, userId }
+  store.dispatch(
+    api.util.invalidateTags([
+      { type: 'Messages', id: data.chatId }
     ])
   );
 };

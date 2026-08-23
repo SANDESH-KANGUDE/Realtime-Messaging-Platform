@@ -7,18 +7,26 @@ import {
   useDeleteMessageMutation,
   useAddReactionMutation,
   usePinMessageMutation,
-  useUnpinMessageMutation 
+  useUnpinMessageMutation,
+  useGetPinnedMessagesQuery,
+  useMarkChatAsDeliveredMutation
 } from '../../api/messageApi';
 import { 
   usePinChatMutation, 
   useUnpinChatMutation,
   useGetChatsQuery,
-  useUpdateChatThemeMutation
+  useUpdateChatThemeMutation,
+  useAddGroupMemberMutation,
+  useRemoveGroupMemberMutation,
+  useDeleteGroupChatMutation
 } from '../../api/chatApi';
 import { 
   useGetFriendsQuery, 
   useGetUserProfileQuery,
-  useGetPreferencesQuery
+  useGetPreferencesQuery,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+  useGetBlockedUsersQuery
 } from '../../api/userApi';
 import { 
   useGetUploadUrlMutation, 
@@ -38,7 +46,8 @@ import PollView from './PollView';
 import { 
   ArrowLeft, Search, Send, Smile, CornerUpLeft, 
   Trash2, Edit3, X, Pin, VolumeX, BarChart2, Check, CheckCheck, Loader,
-  MessageSquare, Copy, Info, Paperclip, FileText, Palette
+  MessageSquare, Copy, Info, Paperclip, FileText, Palette, MoreVertical,
+  UserMinus, UserPlus, LogOut, ShieldAlert
 } from 'lucide-react';
 
 const ChatHeaderName = ({ chat, currentUserId, friends }) => {
@@ -121,10 +130,18 @@ export const ChatPanel = () => {
   const [messageText, setMessageText] = useState('');
   const [editingMessage, setEditingMessage] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [streamingText, setStreamingText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState(null);
+  const accessToken = useSelector((state) => state.auth.accessToken);
+
+
+
   const [activeReactionPickerMessageId, setActiveReactionPickerMessageId] = useState(null);
   const [selectedMessageActionsId, setSelectedMessageActionsId] = useState(null);
   const [showMessageInfoId, setShowMessageInfoId] = useState(null);
   const typingTimeoutRef = useRef(null);
+  const safetyTimeoutRef = useRef(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   const [attachedFile, setAttachedFile] = useState(null);
@@ -132,12 +149,36 @@ export const ChatPanel = () => {
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [newGroupMemberId, setNewGroupMemberId] = useState('');
+
+  const [blockUser] = useBlockUserMutation();
+  const [unblockUser] = useUnblockUserMutation();
+  const { data: blockedUsersRes } = useGetBlockedUsersQuery();
+  const [addGroupMember] = useAddGroupMemberMutation();
+  const [removeGroupMember] = useRemoveGroupMemberMutation();
+  const [deleteGroupChat] = useDeleteGroupChatMutation();
 
   const [updateChatTheme] = useUpdateChatThemeMutation();
   const { data: prefRes } = useGetPreferencesQuery();
   const [getUploadUrl] = useGetUploadUrlMutation();
   const [confirmUpload] = useConfirmUploadMutation();
   const [searchEntities, { data: searchResultsRes, isLoading: searchLoading }] = useLazySearchEntitiesQuery();
+
+  const [pinMessage] = usePinMessageMutation();
+  const [unpinMessage] = useUnpinMessageMutation();
+  const [markChatAsDelivered] = useMarkChatAsDeliveredMutation();
+  const { data: pinnedMessagesRes } = useGetPinnedMessagesQuery(activeChatId, {
+    skip: !activeChatId
+  });
+  const pinnedMessages = pinnedMessagesRes?.data || [];
+
+  useEffect(() => {
+    if (activeChatId) {
+      markChatAsDelivered(activeChatId);
+      setShowInfoPanel(false);
+    }
+  }, [activeChatId, markChatAsDelivered]);
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
@@ -161,9 +202,35 @@ export const ChatPanel = () => {
     }
   };
 
-  // Pagination tracking states
   const [page, setPage] = useState(0);
   const [messagesList, setMessagesList] = useState([]);
+
+  // Clear streaming state when the real AI response lands in messagesList
+  React.useEffect(() => {
+    if (messagesList && messagesList.length > 0) {
+      const lastMsg = messagesList[messagesList.length - 1];
+      if (lastMsg.senderId === '018f98d0-0000-0000-0000-000000000000') {
+        setIsGenerating(false);
+        setStreamingText('');
+        setGenerationError(null);
+        if (safetyTimeoutRef.current) {
+          clearTimeout(safetyTimeoutRef.current);
+          safetyTimeoutRef.current = null;
+        }
+      }
+    }
+  }, [messagesList]);
+
+  // Clear streaming state if the chat changes
+  React.useEffect(() => {
+    setIsGenerating(false);
+    setStreamingText('');
+    setGenerationError(null);
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
+    }
+  }, [activeChatId]);
 
   // Fetch paginated messages using RTK Query
   const { data: msgsRes, isLoading: messagesLoading, isFetching: messagesFetching } = useGetChatMessagesQuery(
@@ -248,12 +315,16 @@ export const ChatPanel = () => {
     }
   }, [activeChatId, page]);
   
-  // Cleanup typing indicator when activeChatId changes or component unmounts
+  // Cleanup typing indicator and safety timeout when activeChatId changes or component unmounts
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
+      }
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+        safetyTimeoutRef.current = null;
       }
       if (activeChatId) {
         emitTyping(activeChatId, false);
@@ -314,6 +385,80 @@ export const ChatPanel = () => {
     }
   };
 
+  const triggerAiStream = async (userPrompt) => {
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
+    }
+    setIsGenerating(true);
+    setStreamingText('');
+    setGenerationError(null);
+
+    try {
+      const gatewayUrl = window.location.origin.includes('localhost')
+        ? 'http://localhost:8080'
+        : window.location.origin;
+
+      const response = await fetch(`${gatewayUrl}/api/v1/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          chatId: activeChatId,
+          content: userPrompt
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      let errorOccurred = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const dataJson = trimmed.substring(6).trim();
+            try {
+              const parsed = JSON.parse(dataJson);
+              if (parsed.text) {
+                accumulated += parsed.text;
+                setStreamingText(accumulated);
+              } else if (parsed.code) {
+                errorOccurred = true;
+                setGenerationError(parsed.message || 'An error occurred during AI generation.');
+              }
+            } catch (e) {
+              // Ignore partial JSON parse errors
+            }
+          }
+        }
+      }
+
+      if (!accumulated && !errorOccurred) {
+        safetyTimeoutRef.current = setTimeout(() => {
+          setGenerationError('Failed to receive response from Aura Assistant. Please check your API key or backend logs.');
+        }, 1200);
+      }
+    } catch (err) {
+      console.error('Failed to fetch AI stream:', err);
+      setGenerationError('Aura Assistant is temporarily unavailable. Please try again later.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!messageText.trim() && !replyingTo && !attachedFile) return;
@@ -335,6 +480,11 @@ export const ChatPanel = () => {
         await sendMessage(payload).unwrap();
         setReplyingTo(null);
         setAttachedFile(null);
+
+        const isAuraAssistant = activeChat?.type === 'DIRECT' && activeChat.members?.some(m => m.userId === '018f98d0-0000-0000-0000-000000000000');
+        if (isAuraAssistant) {
+          triggerAiStream(sanitized);
+        }
       }
       setMessageText('');
       setShowEmojiPicker(false);
@@ -431,6 +581,16 @@ export const ChatPanel = () => {
     'theme-slate': 'bg-slate-50 dark:bg-slate-950'
   };
   const bgClass = themeClasses[activeTheme] || themeClasses['theme-slate'];
+
+  const themeMessageClasses = {
+    'theme-teal': 'bg-teal-600 border-teal-700 text-white rounded-tr-none',
+    'theme-rose': 'bg-rose-600 border-rose-700 text-white rounded-tr-none',
+    'theme-lavender': 'bg-purple-600 border-purple-700 text-white rounded-tr-none',
+    'theme-green': 'bg-emerald-600 border-emerald-700 text-white rounded-tr-none',
+    'theme-doodle': 'bg-amber-600 border-amber-700 text-white rounded-tr-none',
+    'theme-slate': 'bg-aura-teal-500 border-aura-teal-600 text-white rounded-tr-none'
+  };
+  const activeMessageClass = themeMessageClasses[activeTheme] || themeMessageClasses['theme-slate'];
 
   const handleThemeChange = async (themeVal) => {
     try {
@@ -558,6 +718,16 @@ export const ChatPanel = () => {
               <BarChart2 size={18} />
             </button>
           )}
+
+          <button
+            onClick={() => setShowInfoPanel(!showInfoPanel)}
+            className={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ${
+              showInfoPanel ? 'text-aura-teal-500 font-bold' : 'text-slate-500'
+            }`}
+            title="Chat info"
+          >
+            <MoreVertical size={18} />
+          </button>
         </div>
       </div>
 
@@ -615,6 +785,35 @@ export const ChatPanel = () => {
         </div>
       )}
 
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+          {/* Pinned Messages Banner */}
+      {pinnedMessages.length > 0 && (
+        <div className="bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800/80 px-4 py-2 flex items-center justify-between shadow-sm z-10 backdrop-blur-sm">
+          <div className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onClick={() => scrollToMessage(pinnedMessages[pinnedMessages.length - 1].id)}>
+            <Pin size={12} className="text-aura-teal-500 transform rotate-45 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-bold text-aura-teal-600 dark:text-aura-teal-400 block">Pinned Message</span>
+              <p className="text-xs text-slate-600 dark:text-slate-300 truncate">
+                {pinnedMessages[pinnedMessages.length - 1].content || 'Attachment'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 ml-4">
+            <span className="text-[9px] px-1.5 py-0.5 bg-slate-105 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded font-semibold flex-shrink-0">
+              {pinnedMessages.length} pinned
+            </span>
+            <button 
+              onClick={() => unpinMessage({ messageId: pinnedMessages[pinnedMessages.length - 1].id, chatId: activeChatId })}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold p-1 cursor-pointer"
+              title="Unpin most recent"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Messages viewport */}
       <div 
         ref={scrollContainerRef}
@@ -650,7 +849,7 @@ export const ChatPanel = () => {
                 onClick={() => setSelectedMessageActionsId(selectedMessageActionsId === msg.id ? null : msg.id)}
                 className={`p-3 rounded-2xl relative shadow-sm border cursor-pointer ${
                   isMe 
-                    ? 'bg-aura-teal-500 border-aura-teal-600 text-white rounded-tr-none' 
+                    ? activeMessageClass 
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-tl-none'
                 }`}
               >
@@ -658,7 +857,13 @@ export const ChatPanel = () => {
                  {msg.replyToMessageId && (() => {
                   const parentMsg = messagesList.find(m => m.id === msg.replyToMessageId);
                   return (
-                    <div className="bg-slate-200/50 dark:bg-slate-800/50 p-2 rounded-lg border-l-4 border-l-aura-teal-500 text-xs mb-2">
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollToMessage(msg.replyToMessageId);
+                      }}
+                      className="bg-slate-200/50 dark:bg-slate-800/50 p-2 rounded-lg border-l-4 border-l-aura-teal-500 text-xs mb-2 cursor-pointer hover:bg-slate-300/40 transition"
+                    >
                       <p className="font-semibold text-[10px] opacity-75">Replying to message</p>
                       <p className="italic truncate">{parentMsg ? parentMsg.content : 'Message deleted or unavailable'}</p>
                     </div>
@@ -710,9 +915,11 @@ export const ChatPanel = () => {
                   {isMe && !isDeleted && (
                     <span className="opacity-75">
                       {msg.readCount > 0 ? (
-                        <CheckCheck size={10} className="text-cyan-300 animate-pulse" />
+                        <CheckCheck size={10} className="text-cyan-300" />
+                      ) : (msg.deliveryReceipts && msg.deliveryReceipts.length > 0) ? (
+                        <CheckCheck size={10} className="text-slate-300" />
                       ) : (
-                        <Check size={10} />
+                        <Check size={10} className="text-slate-300" />
                       )}
                     </span>
                   )}
@@ -788,6 +995,23 @@ export const ChatPanel = () => {
                       <Info size={12} />
                     </button>
 
+                    <button 
+                      onClick={() => {
+                        if (msg.pinned) {
+                          unpinMessage({ messageId: msg.id, chatId: activeChatId });
+                        } else {
+                          pinMessage({ messageId: msg.id, chatId: activeChatId });
+                        }
+                        setSelectedMessageActionsId(null);
+                      }}
+                      className={`p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer ${
+                        msg.pinned ? 'text-aura-teal-500' : 'text-slate-500'
+                      }`}
+                      title={msg.pinned ? 'Unpin message' : 'Pin message'}
+                    >
+                      <Pin size={12} className={msg.pinned ? 'transform rotate-45' : ''} />
+                    </button>
+
                     {isMe && msg.createdAt && (new Date().getTime() - new Date(msg.createdAt).getTime()) <= 3 * 60 * 1000 && (
                       <>
                         <button 
@@ -817,9 +1041,10 @@ export const ChatPanel = () => {
                 )}
 
                 {/* Message Info Box overlay */}
+                {/* Message Info Box overlay */}
                 {showMessageInfoId === msg.id && (
                   <div 
-                    className={`absolute bottom-full mb-2 bg-slate-900 text-white text-[11px] p-3 rounded-xl shadow-xl border border-slate-800 z-30 min-w-[220px] cursor-default ${
+                    className={`absolute bottom-full mb-2 bg-slate-900 text-white text-[11px] p-3 rounded-xl shadow-xl border border-slate-800 z-30 min-w-[220px] max-w-[280px] cursor-default ${
                       isMe ? 'right-0' : 'left-0'
                     }`}
                     onClick={(e) => e.stopPropagation()}
@@ -833,27 +1058,46 @@ export const ChatPanel = () => {
                         ×
                       </button>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex justify-between gap-4">
                         <span className="text-slate-400">Sent:</span>
                         <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleString() : 'N/A'}</span>
                       </div>
-                      <div className="flex justify-between gap-4">
-                        <span className="text-slate-400">Delivered:</span>
-                        <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleString() : 'N/A'}</span>
-                      </div>
-                      <div className="border-t border-slate-800 pt-1.5 mt-1.5">
-                        <p className="text-slate-400 font-semibold mb-1">Read receipts:</p>
-                        {!msg.readReceipts || msg.readReceipts.length === 0 ? (
-                          <p className="text-slate-500 italic">No one has read this yet</p>
+                      
+                      {/* Delivered section */}
+                      <div className="border-t border-slate-800 pt-1.5">
+                        <p className="text-slate-400 font-semibold mb-1">Delivered to:</p>
+                        {!msg.deliveryReceipts || msg.deliveryReceipts.length === 0 ? (
+                          <p className="text-slate-500 italic text-[10px]">No delivery receipts yet</p>
                         ) : (
-                          <div className="max-h-[80px] overflow-y-auto space-y-1 pr-1">
-                            {msg.readReceipts.map((receipt, idx) => (
-                              <div key={idx} className="flex justify-between items-center gap-4">
-                                <span className="truncate font-semibold text-aura-teal-400">
+                          <div className="max-h-[60px] overflow-y-auto space-y-1 pr-1">
+                            {msg.deliveryReceipts.map((receipt, idx) => (
+                              <div key={idx} className="flex justify-between items-center gap-4 text-[10px]">
+                                <span className="truncate text-slate-350">
                                   <SenderName userId={receipt.userId} />
                                 </span>
-                                <span className="text-[10px] text-slate-400 flex-shrink-0">
+                                <span className="text-[9px] text-slate-440 flex-shrink-0">
+                                  {receipt.deliveredAt ? new Date(receipt.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Read receipts section */}
+                      <div className="border-t border-slate-800 pt-1.5">
+                        <p className="text-slate-400 font-semibold mb-1">Read by:</p>
+                        {!msg.readReceipts || msg.readReceipts.length === 0 ? (
+                          <p className="text-slate-500 italic text-[10px]">No one has read this yet</p>
+                        ) : (
+                          <div className="max-h-[60px] overflow-y-auto space-y-1 pr-1">
+                            {msg.readReceipts.map((receipt, idx) => (
+                              <div key={idx} className="flex justify-between items-center gap-4 text-[10px]">
+                                <span className="truncate text-aura-teal-400 font-semibold">
+                                  <SenderName userId={receipt.userId} />
+                                </span>
+                                <span className="text-[9px] text-slate-440 flex-shrink-0">
                                   {receipt.readAt ? new Date(receipt.readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                 </span>
                               </div>
@@ -883,6 +1127,32 @@ export const ChatPanel = () => {
             </div>
           );
         })}
+        {/* Aura Assistant streaming bubble */}
+        {(isGenerating || streamingText || generationError) && (
+          <div className="flex flex-col max-w-[80%] md:max-w-[70%] self-start items-start">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 ml-2 mb-0.5">
+              Aura Assistant
+            </span>
+            <div className="p-3 rounded-2xl relative shadow-sm border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-tl-none">
+              {generationError ? (
+                <div className="text-red-550 text-red-500 dark:text-red-400 text-xs font-semibold">
+                  ⚠️ {generationError}
+                </div>
+              ) : streamingText ? (
+                <div className="text-xs leading-relaxed whitespace-pre-wrap">
+                  {streamingText}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 py-1 px-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura-teal-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura-teal-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura-teal-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1.5 font-medium select-none">thinking...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         <div ref={messagesEndRef} />
       </div>
@@ -963,8 +1233,9 @@ export const ChatPanel = () => {
           onChange={handleInputChange}
           onFocus={() => emitTyping(activeChatId, true)}
           onBlur={() => emitTyping(activeChatId, false)}
-          placeholder={editingMessage ? "Edit message..." : "Type your message here..."}
-          className="flex-1 px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-aura-teal-500"
+          placeholder={isGenerating ? "Aura Assistant is responding..." : (editingMessage ? "Edit message..." : "Type your message here...")}
+          disabled={isGenerating}
+          className="flex-1 px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-aura-teal-500 disabled:opacity-60"
         />
 
         {/* Attachment option after textbox */}
@@ -979,19 +1250,265 @@ export const ChatPanel = () => {
             accept="image/*,application/pdf" 
             className="hidden" 
             onChange={handleFileChange}
-            disabled={uploadingFile}
+            disabled={uploadingFile || isGenerating}
           />
         </label>
 
         <button 
           type="submit"
-          disabled={sendLoading || uploadingFile || (!messageText.trim() && !replyingTo && !attachedFile)}
+          disabled={sendLoading || uploadingFile || isGenerating || (!messageText.trim() && !replyingTo && !attachedFile)}
           className="p-2.5 bg-aura-teal-600 text-white rounded-xl shadow-md hover:bg-aura-teal-700 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           <Send size={18} />
         </button>
       </form>
     </div>
+
+    {/* Info Panel */}
+    {showInfoPanel && (
+      <div className="w-80 flex-shrink-0 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full overflow-y-auto">
+        {/* Header */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950/40">
+          <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+            <Info size={16} className="text-aura-teal-500" />
+            Chat Information
+          </h3>
+          <button 
+            type="button"
+            onClick={() => setShowInfoPanel(false)}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-5">
+          {activeChat?.type === 'DIRECT' ? (() => {
+            const otherMember = activeChat.members?.find((m) => m.userId !== currentUserId);
+            // Get otherMember profile
+            const { data: otherProfileRes } = useGetUserProfileQuery(otherMember?.userId, { skip: !otherMember?.userId });
+            const otherProfile = otherProfileRes?.data || {};
+            const isBlocked = blockedUsersRes?.data?.some(b => b.blockedUserId === otherMember?.userId);
+
+            const handleBlockAction = async () => {
+              try {
+                if (isBlocked) {
+                  await unblockUser(otherMember.userId).unwrap();
+                } else {
+                  await blockUser(otherMember.userId).unwrap();
+                }
+              } catch (err) {
+                console.error('Failed to update block status:', err);
+              }
+            };
+
+            return (
+              <div className="space-y-5">
+                {/* User profile card */}
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <img 
+                    src={otherProfile.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scooter'} 
+                    alt="Profile avatar" 
+                    className="w-20 h-20 rounded-full object-cover border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950" 
+                  />
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{otherProfile.displayName || otherProfile.username || 'Direct Chat'}</h4>
+                    <p className="text-xs text-slate-400">@{otherProfile.username || 'username'}</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3.5">
+                  {/* Bio */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Bio</span>
+                    <p className="text-xs text-slate-700 dark:text-slate-350 mt-0.5">{otherProfile.bio || 'No bio available'}</p>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Phone Number</span>
+                    <p className="text-xs text-slate-700 dark:text-slate-355 mt-0.5">{otherProfile.phoneNumber || 'No phone number provided'}</p>
+                  </div>
+
+                  {/* Status Message */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status Message</span>
+                    <p className="text-xs text-slate-700 dark:text-slate-355 mt-0.5">{otherProfile.statusMessage || 'Available'}</p>
+                  </div>
+                </div>
+
+                {/* Block / Unblock Actions */}
+                <button 
+                  type="button"
+                  onClick={handleBlockAction}
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                    isBlocked 
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-100' 
+                      : 'border-red-500 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-450 hover:bg-red-105'
+                  }`}
+                >
+                  <ShieldAlert size={14} />
+                  <span>{isBlocked ? 'Unblock User' : 'Block User'}</span>
+                </button>
+              </div>
+            );
+          })() : (() => {
+            // Group Chat
+            const isCreator = activeChat.createdBy === currentUserId;
+            const myMemberInfo = activeChat.members?.find(m => m.userId === currentUserId);
+            const isAdmin = myMemberInfo?.role === 'ADMIN' || isCreator;
+
+            const handleLeaveGroup = async () => {
+              if (window.confirm('Are you sure you want to leave this group?')) {
+                try {
+                  await removeGroupMember({ chatId: activeChatId, userId: currentUserId }).unwrap();
+                  dispatch(setActiveChatId(null));
+                } catch (err) {
+                  console.error('Failed to leave group:', err);
+                }
+              }
+            };
+
+            const handleDeleteGroup = async () => {
+              if (window.confirm('Are you sure you want to delete this group? This action is permanent!')) {
+                try {
+                  await deleteGroupChat(activeChatId).unwrap();
+                  dispatch(setActiveChatId(null));
+                } catch (err) {
+                  console.error('Failed to delete group:', err);
+                }
+              }
+            };
+
+            const handleAddMember = async (e) => {
+              e.preventDefault();
+              if (!newGroupMemberId.trim()) return;
+              try {
+                await addGroupMember({ chatId: activeChatId, userId: newGroupMemberId.trim() }).unwrap();
+                setNewGroupMemberId('');
+              } catch (err) {
+                alert(err.data?.message || 'Failed to add member to group');
+              }
+            };
+
+            const handleKickMember = async (targetUserId) => {
+              if (window.confirm('Are you sure you want to kick this member?')) {
+                try {
+                  await removeGroupMember({ chatId: activeChatId, userId: targetUserId }).unwrap();
+                } catch (err) {
+                  console.error('Failed to kick member:', err);
+                }
+              }
+            };
+
+            return (
+              <div className="space-y-5">
+                {/* Group info card */}
+                <div className="flex flex-col items-center text-center space-y-2">
+                  <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-850 flex items-center justify-center font-bold text-2xl text-aura-teal-600">
+                    {activeChat.avatarUrl ? (
+                      <img src={activeChat.avatarUrl} alt="Group avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      activeChat.title?.substring(0, 2).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{activeChat.title}</h4>
+                    <p className="text-[10px] text-slate-450">{activeChat.members?.length || 0} members</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-850 pt-4 space-y-3.5">
+                  {/* Description */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Description</span>
+                    <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5">{activeChat.description || 'No description'}</p>
+                  </div>
+
+                  {/* Add member (Admin only) */}
+                  {isAdmin && (
+                    <div>
+                      <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Add Member</span>
+                      <form onSubmit={handleAddMember} className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={newGroupMemberId}
+                          onChange={(e) => setNewGroupMemberId(e.target.value)}
+                          placeholder="Enter user ID..." 
+                          className="flex-1 min-w-0 px-2.5 py-1.5 text-[11px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-aura-teal-500"
+                        />
+                        <button 
+                          type="submit" 
+                          className="px-3 py-1.5 bg-aura-teal-600 text-white rounded-lg text-[11px] font-bold hover:bg-aura-teal-700 transition cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Members list */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-2">Members</span>
+                    <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1">
+                      {activeChat.members?.map((m) => (
+                        <div key={m.id} className="flex justify-between items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
+                              <SenderName userId={m.userId} />
+                            </span>
+                            {m.role === 'ADMIN' && (
+                              <span className="px-1 py-0.2 bg-aura-teal-55/20 text-aura-teal-600 dark:text-aura-teal-400 border border-aura-teal-100/50 dark:border-aura-teal-900/50 rounded text-[8px] font-bold scale-90">
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                          {isAdmin && m.userId !== currentUserId && (
+                            <button 
+                              type="button"
+                              onClick={() => handleKickMember(m.userId)}
+                              className="text-[9px] text-red-500 hover:text-red-750 font-bold hover:underline cursor-pointer"
+                            >
+                              Kick
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group actions (Leave / Delete) */}
+                <div className="space-y-2 border-t border-slate-100 dark:border-slate-850 pt-4">
+                  <button 
+                    type="button"
+                    onClick={handleLeaveGroup}
+                    className="w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-red-200 bg-red-50/50 hover:bg-red-55 text-red-600 dark:border-red-950/50 dark:bg-red-950/10 dark:text-red-400"
+                  >
+                    <LogOut size={14} />
+                    <span>Leave Group</span>
+                  </button>
+
+                  {isCreator && (
+                    <button 
+                      type="button"
+                      onClick={handleDeleteGroup}
+                      className="w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-red-500 bg-red-650 hover:bg-red-700 text-white"
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete Group</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
   );
 };
 

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-@ConditionalOnProperty(name = "spring.kafka.bootstrap-servers")
 public class SearchKafkaListener {
 
     private static final Logger log = LoggerFactory.getLogger(SearchKafkaListener.class);

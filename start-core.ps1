@@ -1,4 +1,22 @@
 # PowerShell script to start only the CORE services to save memory
+
+# Load environment variables from .env if present
+if (Test-Path ".env") {
+    Write-Host "Loading environment variables from root .env..." -ForegroundColor Yellow
+    Get-Content ".env" | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+            $key, $value = $line.Split("=", 2)
+            $key = $key.Trim()
+            $value = $value.Trim()
+            if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+                $value = $value.Substring(1, $value.Length - 2)
+            }
+            [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
+        }
+    }
+}
+
 Write-Host "Starting Docker containers..." -ForegroundColor Green
 docker-compose up -d
 
@@ -15,7 +33,8 @@ $services = @(
     "message-service",
     "realtime-service",
     "search-service",
-    "notification-service"
+    "notification-service",
+    "ai-service"
 )
 
 foreach ($service in $services) {

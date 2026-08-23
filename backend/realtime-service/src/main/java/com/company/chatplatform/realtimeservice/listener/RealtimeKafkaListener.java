@@ -31,7 +31,7 @@ public class RealtimeKafkaListener {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = {EventTopics.MESSAGE_SENT, EventTopics.MESSAGE_EDITED, EventTopics.MESSAGE_DELETED, EventTopics.MESSAGE_READ, EventTopics.FRIEND_REQUEST_SENT, "friend.request.accepted.v1"}, groupId = "realtime-service-group")
+    @KafkaListener(topics = {EventTopics.MESSAGE_SENT, EventTopics.MESSAGE_EDITED, EventTopics.MESSAGE_DELETED, EventTopics.MESSAGE_READ, "message.read.v1", "message.delivered.v1", EventTopics.FRIEND_REQUEST_SENT, "friend.request.accepted.v1"}, groupId = "realtime-service-group")
     public void handleMessageEvent(
             String message,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic
@@ -70,6 +70,8 @@ public class RealtimeKafkaListener {
                     socketEventName = "message_deleted";
                 } else if (EventTopics.MESSAGE_READ.equals(topic) || "message.read.v1".equals(topic)) {
                     socketEventName = "message_read";
+                } else if ("message.delivered.v1".equals(topic)) {
+                    socketEventName = "message_delivered";
                 }
                 
                 // Broadcast to the chatId room

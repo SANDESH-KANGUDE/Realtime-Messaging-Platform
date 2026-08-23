@@ -10,10 +10,10 @@ import java.util.List;
 @Repository
 public interface SearchIndexRepository extends MongoRepository<SearchIndexDocument, String> {
 
-    @Query("{ $text: { $search: ?0 } }")
+    @Query("{ '$or': [ { 'title': { '$regex': ?0, '$options': 'i' } }, { 'content': { '$regex': ?0, '$options': 'i' } } ] }")
     List<SearchIndexDocument> searchByText(String text);
 
-    @Query("{ $text: { $search: ?0 }, 'entityType': ?1 }")
+    @Query("{ 'entityType': ?1, '$or': [ { 'title': { '$regex': ?0, '$options': 'i' } }, { 'content': { '$regex': ?0, '$options': 'i' } } ] }")
     List<SearchIndexDocument> searchByTextAndType(String text, String entityType);
 
     void deleteByEntityIdAndEntityType(String entityId, String entityType);

@@ -58,6 +58,12 @@ spring:
             - Path=/api/v1/search/**
           filters:
             - GatewayJwtFilter
+        - id: ai-service
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - GatewayJwtFilter
         - id: realtime-service
           uri: ws://localhost:8085
           predicates:

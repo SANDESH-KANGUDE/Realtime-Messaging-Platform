@@ -7,17 +7,19 @@ public class NotificationDto {
     private String body;
     private String type;
     private boolean read;
+    private String chatId;
     private String createdAt;
 
     public NotificationDto() {}
 
-    public NotificationDto(String id, String recipientId, String title, String body, String type, boolean read, String createdAt) {
+    public NotificationDto(String id, String recipientId, String title, String body, String type, boolean read, String chatId, String createdAt) {
         this.id = id;
         this.recipientId = recipientId;
         this.title = title;
         this.body = body;
         this.type = type;
         this.read = read;
+        this.chatId = chatId;
         this.createdAt = createdAt;
     }
 
@@ -47,5 +49,13 @@ public class NotificationDto {
 
     public String getCreatedAt() {
         return createdAt;
+    }
+
+    public String getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(String chatId) {
+        this.chatId = chatId;
     }
 }

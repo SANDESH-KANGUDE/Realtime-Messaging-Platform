@@ -82,6 +82,13 @@ export const chatApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Chats'],
     }),
+    deleteGroupChat: builder.mutation({
+      query: (chatId) => ({
+        url: `/api/v1/chats/${chatId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Chats'],
+    }),
   }),
 });
 
@@ -97,5 +104,6 @@ export const {
   useRemoveGroupMemberMutation,
   useUpdateMemberRoleMutation,
   useUpdateChatThemeMutation,
+  useDeleteGroupChatMutation,
 } = chatApi;
 export default chatApi;

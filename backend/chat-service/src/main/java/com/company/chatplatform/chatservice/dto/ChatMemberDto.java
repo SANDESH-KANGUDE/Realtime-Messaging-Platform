@@ -8,11 +8,13 @@ public class ChatMemberDto {
     private boolean pinned;
     private boolean archived;
     private String theme;
+    private String leftAt;
+    private boolean active = true;
     private String joinedAt;
 
     public ChatMemberDto() {}
 
-    public ChatMemberDto(String id, String chatId, String userId, String role, boolean pinned, boolean archived, String theme, String joinedAt) {
+    public ChatMemberDto(String id, String chatId, String userId, String role, boolean pinned, boolean archived, String theme, String leftAt, boolean active, String joinedAt) {
         this.id = id;
         this.chatId = chatId;
         this.userId = userId;
@@ -20,6 +22,8 @@ public class ChatMemberDto {
         this.pinned = pinned;
         this.archived = archived;
         this.theme = theme;
+        this.leftAt = leftAt;
+        this.active = active;
         this.joinedAt = joinedAt;
     }
 
@@ -96,5 +100,21 @@ public class ChatMemberDto {
 
     public void setJoinedAt(String joinedAt) {
         this.joinedAt = joinedAt;
+    }
+
+    public String getLeftAt() {
+        return leftAt;
+    }
+
+    public void setLeftAt(String leftAt) {
+        this.leftAt = leftAt;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }
